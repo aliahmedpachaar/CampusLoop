@@ -1,3 +1,11 @@
 const { getDefaultConfig } = require('expo/metro-config');
 
-module.exports = getDefaultConfig(__dirname);
+const config = getDefaultConfig(__dirname);
+
+// Fix for Node.js v24 compatibility with Metro bundler
+config.resolver = {
+    ...config.resolver,
+    unstable_enablePackageExports: false,
+};
+
+module.exports = config;

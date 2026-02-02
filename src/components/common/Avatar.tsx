@@ -9,7 +9,7 @@ import { useCampusLoopTheme } from '../../context/ThemeContext';
 import { CampusLoopTypography } from '../../constants/theme';
 import { getInitials } from '../../utils/formatting';
 
-type AvatarSize = 'small' | 'medium' | 'large';
+type AvatarSize = 'tiny' | 'small' | 'medium' | 'large';
 
 interface CampusLoopAvatarProps {
     imageUri?: string;
@@ -30,6 +30,8 @@ export const CampusLoopAvatar: React.FC<CampusLoopAvatarProps> = ({
 
     const getSize = () => {
         switch (size) {
+            case 'tiny':
+                return 32;
             case 'small':
                 return 40;
             case 'large':
@@ -41,6 +43,8 @@ export const CampusLoopAvatar: React.FC<CampusLoopAvatarProps> = ({
 
     const getFontSize = () => {
         switch (size) {
+            case 'tiny':
+                return CampusLoopTypography.fontSize.xs;
             case 'small':
                 return CampusLoopTypography.fontSize.sm;
             case 'large':

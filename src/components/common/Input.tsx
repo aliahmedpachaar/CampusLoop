@@ -69,7 +69,8 @@ export const CampusLoopInput: React.FC<CampusLoopInputProps> = ({
                         backgroundColor: colors.surface,
                         borderRadius: CampusLoopBorderRadius.md,
                     },
-                ]}>
+                ]}
+            >
                 {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
 
                 <TextInput
@@ -79,22 +80,25 @@ export const CampusLoopInput: React.FC<CampusLoopInputProps> = ({
                             color: colors.text,
                             fontSize: CampusLoopTypography.fontSize.base,
                         },
-                        leftIcon && { paddingLeft: 0 },
-                        rightIcon && { paddingRight: 0 },
+                        leftIcon ? { paddingLeft: 0 } : undefined,
+                        rightIcon ? { paddingRight: 0 } : undefined,
                     ]}
                     placeholderTextColor={colors.textTertiary}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
+                    onFocus={(e) => {
+                        setIsFocused(true);
+                        props.onFocus?.(e);
+                    }}
+                    onBlur={(e) => {
+                        setIsFocused(false);
+                        props.onBlur?.(e);
+                    }}
                     {...props}
                 />
 
                 {rightIcon && (
-                    <TouchableOpacity
-                        onPress={onRightIconPress}
-                        disabled={!onRightIconPress}
-                        style={styles.rightIcon}>
+                    <View style={styles.rightIcon}>
                         {rightIcon}
-                    </TouchableOpacity>
+                    </View>
                 )}
             </View>
 

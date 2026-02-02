@@ -1,6 +1,6 @@
 /**
- * CampusLoop Activities Screen
- * Browse and join student activities
+ * CampusLoop Enhanced Activities Screen
+ * Categorized activities with beautiful cards and join animations
  */
 
 import React, { useState, useEffect } from 'react';
@@ -9,38 +9,76 @@ import {
     Text,
     StyleSheet,
     FlatList,
-    RefreshControl,
     TouchableOpacity,
+    RefreshControl,
+    Animated,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCampusLoopTheme } from '../../context/ThemeContext';
 import { useCampusLoopAuth } from '../../context/AuthContext';
 import { CampusLoopCard } from '../../components/common/Card';
 import { CampusLoopAvatar } from '../../components/common/Avatar';
-import { CampusLoopButton } from '../../components/common/Button';
 import { CampusLoopActivityService } from '../../services/activityService';
-import { CampusLoopActivity, CampusLoopActivityTypeLabels, CampusLoopActivityTypeColors } from '../../types/activity';
-import { formatRelativeTime, formatDateTime } from '../../utils/formatting';
-import { CampusLoopSpacing, CampusLoopTypography } from '../../constants/theme';
+import { CampusLoopActivity } from '../../types/activity';
+import { formatRelativeTime } from '../../utils/formatting';
+import {
+    CampusLoopSpacing,
+    CampusLoopTypography,
+    CampusLoopBorderRadius,
+    CampusLoopShadows,
+} from '../../constants/theme';
 
 interface ActivitiesScreenProps {
     navigation: any;
 }
+
+type ActivityCategory = 'all' | 'study' | 'sports' | 'events' | 'trips' | 'movies' | 'exams';
+
+const categoryIcons: Record<ActivityCategory, string> = {
+    all: '🎯',
+    study: '📚',
+    sports: '⚽',
+    events: '🎉',
+    trips: '✈️',
+    movies: '🎬',
+    exams: '📝',
+};
+
+const categoryLabels: Record<ActivityCategory, string> = {
+    all: 'All',
+    study: 'Study',
+    sports: 'Sports',
+    events: 'Events',
+    trips: 'Trips',
+    movies: 'Movies',
+    exams: 'Exams',
+};
+
+const categoryToActivityType: Record<string, string> = {
+    study: 'study_group',
+    sports: 'sports',
+    events: 'event',
+    trips: 'event',
+    movies: 'event',
+    exams: 'study_group',
+};
 
 export const ActivitiesScreen: React.FC<ActivitiesScreenProps> = ({ navigation }) => {
     const { colors } = useCampusLoopTheme();
     const { state: authState } = useCampusLoopAuth();
 
     const [activities, setActivities] = useState<CampusLoopActivity[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<ActivityCategory>('all');
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadActivities();
-    }, []);
+    }, [selectedCategory]);
 
     const loadActivities = async () => {
         try {
-            const data = await CampusLoopActivityService.getActivities(undefined, authState.user?.id);
+            const data = await CampusLoopActivityService.getActivities(authState.user?.id);
             setActivities(data);
         } catch (error) {
             console.error('Error loading activities:', error);
@@ -55,113 +93,238 @@ export const ActivitiesScreen: React.FC<ActivitiesScreenProps> = ({ navigation }
         loadActivities();
     };
 
-    const handleJoinLeave = async (activity: CampusLoopActivity) => {
+    const handleJoinActivity = async (activityId: string) => {
         try {
-            if (activity.isJoined) {
-                const updated = await CampusLoopActivityService.leaveActivity(activity.id, authState.user!.id);
-                setActivities(activities.map(a => (a.id === activity.id ? updated : a)));
-            } else {
-                const updated = await CampusLoopActivityService.joinActivity(activity.id, authState.user!.id);
-                setActivities(activities.map(a => (a.id === activity.id ? updated : a)));
-            }
-        } catch (error: any) {
-            console.error('Error joining/leaving activity:', error);
+            const updatedActivity = await CampusLoopActivityService.joinActivity(
+                activityId,
+                authState.user!.id
+            );
+            setActivities(
+                activities.map((a) => (a.id === activityId ? updatedActivity : a))
+            );
+        } catch (error) {
+            console.error('Error joining activity:', error);
         }
     };
 
-    const renderActivityCard = ({ item }: { item: CampusLoopActivity }) => {
-        const isFull = item.currentParticipants >= item.maxParticipants;
-        const spotsLeft = item.maxParticipants - item.currentParticipants;
+    const categories: ActivityCategory[] = ['all', 'study', 'sports', 'events', 'trips', 'movies', 'exams'];
 
-        return (
-            <CampusLoopCard style={styles.activityCard}>
-                <View style={[styles.typeBadge, { backgroundColor: CampusLoopActivityTypeColors[item.type] }]}>
-                    <Text style={styles.typeBadgeText}>{CampusLoopActivityTypeLabels[item.type]}</Text>
-                </View>
-
-                <Text style={[styles.activityTitle, { color: colors.text }]}>{item.title}</Text>
-                <Text style={[styles.activityDescription, { color: colors.textSecondary }]}>
-                    {item.description}
-                </Text>
-
-                <View style={styles.activityMeta}>
-                    <View style={styles.creatorInfo}>
-                        <CampusLoopAvatar name={item.creatorName} size="small" imageUri={item.creatorAvatar} />
-                        <View style={styles.creatorText}>
-                            <Text style={[styles.creatorName, { color: colors.text }]}>{item.creatorName}</Text>
-                            <Text style={[styles.activityTime, { color: colors.textSecondary }]}>
-                                {formatRelativeTime(item.createdAt)}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.participantInfo}>
-                        <Text style={[styles.participantCount, { color: colors.text }]}>
-                            {item.currentParticipants}/{item.maxParticipants}
-                        </Text>
-                        <Text style={[styles.participantLabel, { color: colors.textSecondary }]}>participants</Text>
-                    </View>
-                </View>
-
-                {item.location && (
-                    <Text style={[styles.location, { color: colors.textSecondary }]}>📍 {item.location}</Text>
-                )}
-
-                {item.scheduledDate && (
-                    <Text style={[styles.scheduledDate, { color: colors.textSecondary }]}>
-                        🗓️ {formatDateTime(item.scheduledDate)}
-                    </Text>
-                )}
-
-                <View style={styles.actionContainer}>
-                    {!isFull || item.isJoined ? (
-                        <CampusLoopButton
-                            title={item.isJoined ? 'Leave' : 'Join'}
-                            onPress={() => handleJoinLeave(item)}
-                            variant={item.isJoined ? 'outline' : 'primary'}
-                            fullWidth
-                        />
-                    ) : (
-                        <Text style={[styles.fullText, { color: colors.error }]}>Activity Full</Text>
-                    )}
-                </View>
-
-                {!isFull && spotsLeft <= 3 && spotsLeft > 0 && (
-                    <Text style={[styles.spotsWarning, { color: colors.warning }]}>
-                        Only {spotsLeft} spot{spotsLeft > 1 ? 's' : ''} left!
-                    </Text>
-                )}
-            </CampusLoopCard>
-        );
-    };
+    const renderActivityCard = ({ item }: { item: CampusLoopActivity }) => (
+        <ActivityCard
+            activity={item}
+            onJoin={handleJoinActivity}
+            colors={colors}
+        />
+    );
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>Activities</Text>
+            {/* Header */}
+            <LinearGradient
+                colors={[colors.gradientStart, colors.gradientEnd]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.header}
+            >
+                <Text style={styles.headerTitle}>Activities</Text>
+                <Text style={styles.headerSubtitle}>Join events, study groups & more</Text>
+            </LinearGradient>
+
+            {/* Category Tabs */}
+            <View style={styles.categoriesContainer}>
+                <FlatList
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    data={categories}
+                    keyExtractor={(item) => item}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={[
+                                styles.categoryTab,
+                                selectedCategory === item && [
+                                    styles.categoryTabActive,
+                                    { backgroundColor: colors.primary },
+                                ],
+                            ]}
+                            onPress={() => setSelectedCategory(item)}
+                        >
+                            <Text style={styles.categoryIcon}>{categoryIcons[item]}</Text>
+                            <Text
+                                style={[
+                                    styles.categoryLabel,
+                                    {
+                                        color:
+                                            selectedCategory === item
+                                                ? '#FFFFFF'
+                                                : colors.textSecondary,
+                                    },
+                                ]}
+                            >
+                                {categoryLabels[item]}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                    contentContainerStyle={styles.categoriesList}
+                />
             </View>
 
+            {/* Activities List */}
             <FlatList
                 data={activities}
-                keyExtractor={item => item.id}
+                keyExtractor={(item) => item.id}
                 renderItem={renderActivityCard}
-                contentContainerStyle={styles.activityList}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+                contentContainerStyle={styles.activitiesList}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={colors.primary}
+                        colors={[colors.primary]}
+                    />
+                }
                 ListEmptyComponent={
                     <View style={styles.emptyState}>
+                        <Text style={styles.emptyIcon}>🎯</Text>
                         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                            {loading ? 'Loading activities...' : 'No activities yet. Create one!'}
+                            No activities yet. Be the first to create one!
                         </Text>
                     </View>
                 }
             />
 
+            {/* Create Activity FAB */}
             <TouchableOpacity
                 style={[styles.fab, { backgroundColor: colors.primary }]}
-                onPress={() => navigation.navigate('CreateActivity')}>
-                <Text style={styles.fabIcon}>➕</Text>
+                onPress={() => {
+                    // TODO: Navigate to CreateActivity screen
+                    console.log('Create activity');
+                }}
+            >
+                <LinearGradient
+                    colors={[colors.gradientStart, colors.gradientEnd]}
+                    style={styles.fabGradient}
+                >
+                    <Text style={styles.fabIcon}>➕</Text>
+                </LinearGradient>
             </TouchableOpacity>
         </View>
+    );
+};
+
+// Activity Card Component
+interface ActivityCardProps {
+    activity: CampusLoopActivity;
+    onJoin: (id: string) => void;
+    colors: any;
+}
+
+const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onJoin, colors }) => {
+    const scaleAnim = new Animated.Value(1);
+
+    const handleJoin = () => {
+        Animated.sequence([
+            Animated.timing(scaleAnim, {
+                toValue: 0.95,
+                duration: 100,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                friction: 3,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        onJoin(activity.id);
+    };
+
+    const isJoined = activity.isJoined;
+    const spotsLeft = activity.maxParticipants - activity.currentParticipants;
+    const activityTypeKey = activity.type.replace('_', ' ');
+
+    return (
+        <CampusLoopCard style={styles.activityCard}>
+            {/* Activity Header */}
+            <View style={styles.activityHeader}>
+                <View style={styles.activityTypeContainer}>
+                    <Text style={styles.activityTypeIcon}>
+                        {activity.type === 'study_group' ? '📚' :
+                            activity.type === 'sports' ? '⚽' :
+                                activity.type === 'event' ? '🎉' :
+                                    activity.type === 'assignment_help' ? '📝' : '🎯'}
+                    </Text>
+                    <Text style={[styles.activityType, { color: colors.primary }]}>
+                        {activityTypeKey}
+                    </Text>
+                </View>
+                <Text style={[styles.activityTime, { color: colors.textSecondary }]}>
+                    {activity.scheduledDate ? formatRelativeTime(activity.scheduledDate) : 'TBD'}
+                </Text>
+            </View>
+
+            {/* Activity Title & Description */}
+            <Text style={[styles.activityTitle, { color: colors.text }]}>
+                {activity.title}
+            </Text>
+            <Text style={[styles.activityDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                {activity.description}
+            </Text>
+
+            {/* Location */}
+            {activity.location && (
+                <View style={styles.locationContainer}>
+                    <Text style={styles.locationIcon}>📍</Text>
+                    <Text style={[styles.locationText, { color: colors.textSecondary }]}>
+                        {activity.location}
+                    </Text>
+                </View>
+            )}
+
+            {/* Participants */}
+            <View style={styles.participantsContainer}>
+                <View style={styles.avatarsStack}>
+                    {activity.participantIds.slice(0, 3).map((participantId: string, index: number) => (
+                        <View
+                            key={participantId}
+                            style={[styles.avatarWrapper, { marginLeft: index > 0 ? -12 : 0 }]}
+                        >
+                            <CampusLoopAvatar
+                                name={`User ${index + 1}`}
+                                size="tiny"
+                            />
+                        </View>
+                    ))}
+                    {activity.currentParticipants > 3 && (
+                        <View style={[styles.moreParticipants, { backgroundColor: colors.border }]}>
+                            <Text style={[styles.moreParticipantsText, { color: colors.text }]}>
+                                +{activity.currentParticipants - 3}
+                            </Text>
+                        </View>
+                    )}
+                </View>
+                <Text style={[styles.spotsText, { color: colors.textSecondary }]}>
+                    {spotsLeft} spots left
+                </Text>
+            </View>
+
+            {/* Join Button */}
+            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                <TouchableOpacity
+                    style={[
+                        styles.joinButton,
+                        isJoined
+                            ? { backgroundColor: colors.success }
+                            : { backgroundColor: colors.primary },
+                    ]}
+                    onPress={handleJoin}
+                    disabled={isJoined}
+                >
+                    <Text style={styles.joinButtonText}>
+                        {isJoined ? '✓ Joined' : '+ Join Activity'}
+                    </Text>
+                </TouchableOpacity>
+            </Animated.View>
+        </CampusLoopCard>
     );
 };
 
@@ -170,120 +333,167 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
+        paddingTop: 50,
+        paddingBottom: CampusLoopSpacing.xl,
         paddingHorizontal: CampusLoopSpacing.base,
-        paddingVertical: CampusLoopSpacing.md,
-        borderBottomWidth: 1,
     },
     headerTitle: {
-        fontSize: CampusLoopTypography.fontSize.xl,
-        fontWeight: CampusLoopTypography.fontWeight.bold,
+        fontSize: CampusLoopTypography.fontSize['2xl'],
+        fontWeight: CampusLoopTypography.fontWeight.extrabold,
+        color: '#FFFFFF',
+        marginBottom: 4,
     },
-    activityList: {
+    headerSubtitle: {
+        fontSize: CampusLoopTypography.fontSize.base,
+        color: '#FFFFFF',
+        opacity: 0.9,
+    },
+    categoriesContainer: {
+        paddingVertical: CampusLoopSpacing.md,
+    },
+    categoriesList: {
+        paddingHorizontal: CampusLoopSpacing.base,
+    },
+    categoryTab: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: CampusLoopSpacing.base,
+        paddingVertical: CampusLoopSpacing.sm,
+        marginRight: CampusLoopSpacing.sm,
+        borderRadius: CampusLoopBorderRadius.lg,
+        backgroundColor: 'rgba(0,0,0,0.05)',
+    },
+    categoryTabActive: {
+        ...CampusLoopShadows.sm,
+    },
+    categoryIcon: {
+        fontSize: 18,
+        marginRight: 6,
+    },
+    categoryLabel: {
+        fontSize: CampusLoopTypography.fontSize.sm,
+        fontWeight: CampusLoopTypography.fontWeight.semibold,
+    },
+    activitiesList: {
         padding: CampusLoopSpacing.base,
     },
     activityCard: {
         marginBottom: CampusLoopSpacing.base,
     },
-    typeBadge: {
-        alignSelf: 'flex-start',
-        paddingHorizontal: CampusLoopSpacing.sm,
-        paddingVertical: 4,
-        borderRadius: 12,
-        marginBottom: CampusLoopSpacing.sm,
-    },
-    typeBadgeText: {
-        fontSize: CampusLoopTypography.fontSize.xs,
-        fontWeight: CampusLoopTypography.fontWeight.medium,
-        color: '#FFFFFF',
-    },
-    activityTitle: {
-        fontSize: CampusLoopTypography.fontSize.lg,
-        fontWeight: CampusLoopTypography.fontWeight.bold,
-        marginBottom: CampusLoopSpacing.sm,
-    },
-    activityDescription: {
-        fontSize: CampusLoopTypography.fontSize.base,
-        lineHeight: CampusLoopTypography.lineHeight.relaxed * CampusLoopTypography.fontSize.base,
-        marginBottom: CampusLoopSpacing.md,
-    },
-    activityMeta: {
+    activityHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: CampusLoopSpacing.sm,
     },
-    creatorInfo: {
+    activityTypeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
     },
-    creatorText: {
-        marginLeft: CampusLoopSpacing.sm,
+    activityTypeIcon: {
+        fontSize: 16,
+        marginRight: 6,
     },
-    creatorName: {
+    activityType: {
         fontSize: CampusLoopTypography.fontSize.sm,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
+        fontWeight: CampusLoopTypography.fontWeight.bold,
+        textTransform: 'uppercase',
     },
     activityTime: {
         fontSize: CampusLoopTypography.fontSize.xs,
     },
-    participantInfo: {
-        alignItems: 'flex-end',
-    },
-    participantCount: {
+    activityTitle: {
         fontSize: CampusLoopTypography.fontSize.lg,
         fontWeight: CampusLoopTypography.fontWeight.bold,
-    },
-    participantLabel: {
-        fontSize: CampusLoopTypography.fontSize.xs,
-    },
-    location: {
-        fontSize: CampusLoopTypography.fontSize.sm,
         marginBottom: CampusLoopSpacing.xs,
     },
-    scheduledDate: {
-        fontSize: CampusLoopTypography.fontSize.sm,
+    activityDescription: {
+        fontSize: CampusLoopTypography.fontSize.base,
+        lineHeight: CampusLoopTypography.lineHeight.normal * CampusLoopTypography.fontSize.base,
         marginBottom: CampusLoopSpacing.sm,
     },
-    actionContainer: {
-        marginTop: CampusLoopSpacing.sm,
+    locationContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: CampusLoopSpacing.md,
     },
-    fullText: {
-        fontSize: CampusLoopTypography.fontSize.base,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
-        textAlign: 'center',
-        paddingVertical: CampusLoopSpacing.md,
+    locationIcon: {
+        fontSize: 14,
+        marginRight: 6,
     },
-    spotsWarning: {
+    locationText: {
         fontSize: CampusLoopTypography.fontSize.sm,
-        fontWeight: CampusLoopTypography.fontWeight.medium,
-        textAlign: 'center',
-        marginTop: CampusLoopSpacing.xs,
+    },
+    participantsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: CampusLoopSpacing.md,
+    },
+    avatarsStack: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    avatarWrapper: {
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+        borderRadius: 16,
+    },
+    moreParticipants: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: -12,
+    },
+    moreParticipantsText: {
+        fontSize: CampusLoopTypography.fontSize.xs,
+        fontWeight: CampusLoopTypography.fontWeight.bold,
+    },
+    spotsText: {
+        fontSize: CampusLoopTypography.fontSize.sm,
+    },
+    joinButton: {
+        paddingVertical: CampusLoopSpacing.md,
+        borderRadius: CampusLoopBorderRadius.base,
+        alignItems: 'center',
+    },
+    joinButtonText: {
+        color: '#FFFFFF',
+        fontSize: CampusLoopTypography.fontSize.base,
+        fontWeight: CampusLoopTypography.fontWeight.bold,
     },
     emptyState: {
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: CampusLoopSpacing['3xl'],
     },
+    emptyIcon: {
+        fontSize: 64,
+        marginBottom: CampusLoopSpacing.base,
+    },
     emptyText: {
         fontSize: CampusLoopTypography.fontSize.base,
+        textAlign: 'center',
     },
     fab: {
         position: 'absolute',
         bottom: CampusLoopSpacing.xl,
         right: CampusLoopSpacing.xl,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        ...CampusLoopShadows.xl,
+    },
+    fabGradient: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 32,
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
     },
     fabIcon: {
-        fontSize: 24,
+        fontSize: 28,
     },
 });
