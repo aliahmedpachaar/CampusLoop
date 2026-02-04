@@ -82,6 +82,8 @@ export const CampusLoopAuthProvider: React.FC<{ children: ReactNode }> = ({ chil
                 if (user) {
                     dispatch({ type: 'SET_USER', payload: { user, token } });
                 } else {
+                    // Token is invalid, clear it
+                    await CampusLoopStorage.clearAll();
                     dispatch({ type: 'SET_LOADING', payload: false });
                 }
             } else {
@@ -89,6 +91,8 @@ export const CampusLoopAuthProvider: React.FC<{ children: ReactNode }> = ({ chil
             }
         } catch (error) {
             console.error('Session check error:', error);
+            // Clear invalid token on error
+            await CampusLoopStorage.clearAll();
             dispatch({ type: 'SET_LOADING', payload: false });
         }
     };

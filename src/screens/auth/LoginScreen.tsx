@@ -230,6 +230,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                         value={password}
                                         onChangeText={setPassword}
                                         secureTextEntry={!showPassword}
+                                        autoComplete="off"
+                                        autoCorrect={false}
                                         style={styles.input}
                                         containerStyle={styles.inputWrapper}
                                     />

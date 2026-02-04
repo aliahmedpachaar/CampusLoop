@@ -100,9 +100,6 @@ export const CreateActivityScreen: React.FC<CreateActivityScreenProps> = ({ navi
         setLoading(true);
         try {
             await CampusLoopActivityService.createActivity(
-                authState.user!.id,
-                authState.user!.fullName,
-                authState.user!.university,
                 {
                     type: selectedType as any,
                     title: title.trim(),
@@ -110,7 +107,8 @@ export const CreateActivityScreen: React.FC<CreateActivityScreenProps> = ({ navi
                     maxParticipants,
                     location: location.trim() || undefined,
                     scheduledDate: scheduledDate || undefined,
-                }
+                },
+                authState.user!.id
             );
 
             Alert.alert(

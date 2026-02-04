@@ -8,6 +8,7 @@ export interface CampusLoopUser {
     email: string;
     fullName: string;
     university: string;
+    campus?: string;
     course: string;
     semester: string;
     interests: string[];
@@ -22,6 +23,7 @@ export interface CampusLoopUserProfile {
     id: string;
     fullName: string;
     university: string;
+    campus?: string;
     course: string;
     semester: string;
     interests: string[];
@@ -33,6 +35,7 @@ export interface CampusLoopUserProfile {
 export interface CampusLoopProfileUpdateData {
     fullName?: string;
     university?: string;
+    campus?: string;
     course?: string;
     semester?: string;
     interests?: string[];
@@ -52,6 +55,7 @@ export interface CampusLoopSignupData {
     password: string;
     fullName: string;
     university: string;
+    campus?: string;
     course: string;
     semester: string;
     interests: string[];

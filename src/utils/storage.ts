@@ -97,4 +97,38 @@ export const CampusLoopStorage = {
             console.error('Error clearing storage:', error);
         }
     },
+
+    /**
+     * Generic get item
+     */
+    getItem: async (key: string): Promise<string | null> => {
+        try {
+            return await AsyncStorage.getItem(`@CampusLoop:${key}`);
+        } catch (error) {
+            console.error(`Error getting ${key}:`, error);
+            return null;
+        }
+    },
+
+    /**
+     * Generic set item
+     */
+    setItem: async (key: string, value: string): Promise<void> => {
+        try {
+            await AsyncStorage.setItem(`@CampusLoop:${key}`, value);
+        } catch (error) {
+            console.error(`Error setting ${key}:`, error);
+        }
+    },
+
+    /**
+     * Generic remove item
+     */
+    removeItem: async (key: string): Promise<void> => {
+        try {
+            await AsyncStorage.removeItem(`@CampusLoop:${key}`);
+        } catch (error) {
+            console.error(`Error removing ${key}:`, error);
+        }
+    },
 };

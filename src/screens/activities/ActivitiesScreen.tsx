@@ -264,13 +264,19 @@ export const ActivitiesScreen: React.FC<ActivitiesScreenProps> = ({ navigation }
 
     const handleJoinActivity = async (activityId: string) => {
         try {
-            const updatedActivity = await CampusLoopActivityService.joinActivity(
+            const success = await CampusLoopActivityService.joinActivity(
                 activityId,
                 authState.user!.id
             );
-            setActivities(prev =>
-                prev.map(a => (a.id === activityId ? updatedActivity : a))
-            );
+            if (success) {
+                // Update local state
+                setActivities(prev =>
+                    prev.map(a => a.id === activityId
+                        ? { ...a, isJoined: true, currentParticipants: a.currentParticipants + 1 }
+                        : a
+                    )
+                );
+            }
         } catch (error) {
             console.error('Error joining activity:', error);
         }
@@ -283,8 +289,12 @@ export const ActivitiesScreen: React.FC<ActivitiesScreenProps> = ({ navigation }
                 study_group: 'study',
                 assignment_help: 'help',
                 sports: 'sports',
+                movies: 'events',
+                trip: 'events',
+                food: 'events',
                 event: 'events',
-                project_collab: 'study',
+                project: 'study',
+                other: 'events',
             };
             return typeToCategory[a.type] === selectedCategory;
         });

@@ -154,6 +154,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                 password,
                 fullName,
                 university,
+                campus,
                 course,
                 semester,
                 interests: selectedInterests,
@@ -240,6 +241,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry={!showPassword}
+                        autoComplete="off"
+                        autoCorrect={false}
                         containerStyle={styles.inputInner}
                     />
                     <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
@@ -258,6 +261,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                         secureTextEntry={!showPassword}
+                        autoComplete="off"
+                        autoCorrect={false}
                         containerStyle={styles.inputInner}
                     />
                 </View>

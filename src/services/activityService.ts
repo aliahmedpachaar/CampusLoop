@@ -1,188 +1,228 @@
 /**
  * CampusLoop Activity Service
- * Mock activity and collaboration service - ready for backend integration
+ * Connects to the backend API for activities
  */
 
 import {
     CampusLoopActivity,
-    CampusLoopActivityParticipant,
     CampusLoopCreateActivityData,
     CampusLoopActivityType,
 } from '../types/activity';
+import { apiService } from './api';
+import { API_CONFIG } from '../config/api';
 
-const mockDelay = (ms: number = 700) => new Promise(resolve => setTimeout(resolve, ms));
+// Transform backend activity to app format
+const transformActivity = (backendActivity: any): CampusLoopActivity => {
+    const participants = backendActivity.participants || [];
+    const acceptedParticipants = participants.filter((p: any) => p.status === 'accepted');
 
-// Mock activities database
-let mockActivities: CampusLoopActivity[] = [
-    {
-        id: 'activity_1',
-        creatorId: '2',
-        creatorName: 'Sarah Johnson',
-        type: 'study_group',
-        title: 'Data Structures Study Group',
-        description: 'Preparing for midterm exam. Meeting twice a week to review concepts and solve problems together.',
-        maxParticipants: 5,
-        currentParticipants: 3,
-        participantIds: ['2', '1'],
-        university: 'Massachusetts Institute of Technology (MIT)',
-        location: 'Library Room 204',
-        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-        isJoined: false,
-    },
-    {
-        id: 'activity_2',
-        creatorId: '1',
-        creatorName: 'Demo Student',
-        type: 'project_collab',
-        title: 'Mobile App Development Team',
-        description: 'Building a campus food delivery app. Need 2 more developers (React Native experience preferred).',
-        maxParticipants: 4,
-        currentParticipants: 2,
-        participantIds: ['1'],
-        university: 'Stanford University',
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-        isJoined: true,
-    },
-    {
-        id: 'activity_3',
-        creatorId: '2',
-        creatorName: 'Sarah Johnson',
-        type: 'sports',
-        title: 'Weekend Football Match',
-        description: 'Casual football game on Saturday morning. All skill levels welcome!',
-        maxParticipants: 12,
-        currentParticipants: 8,
-        participantIds: ['2'],
-        university: 'Massachusetts Institute of Technology (MIT)',
-        location: 'Main Campus Field',
-        scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        isJoined: false,
-    },
-];
+    return {
+        id: backendActivity._id || backendActivity.id,
+        creatorId: backendActivity.creator?._id || backendActivity.creator,
+        creatorName: backendActivity.creator?.fullName || 'Unknown',
+        creatorAvatar: backendActivity.creator?.avatar,
+        type: backendActivity.type as CampusLoopActivityType,
+        title: backendActivity.title,
+        description: backendActivity.description,
+        maxParticipants: backendActivity.maxParticipants,
+        currentParticipants: acceptedParticipants.length,
+        participantIds: acceptedParticipants.map((p: any) => p.user?._id || p.user),
+        participants: acceptedParticipants.map((p: any) => ({
+            id: p.user?._id || p.user,
+            name: p.user?.fullName || 'Unknown',
+            avatar: p.user?.avatar,
+        })),
+        university: backendActivity.university,
+        campus: backendActivity.campus,
+        location: backendActivity.location,
+        scheduledDate: backendActivity.scheduledDate ? new Date(backendActivity.scheduledDate) : undefined,
+        createdAt: new Date(backendActivity.createdAt),
+        isJoined: backendActivity.isJoined || false,
+        isCreator: backendActivity.isCreator || false,
+        status: backendActivity.status || 'active',
+        tags: backendActivity.tags || [],
+    };
+};
 
 export const CampusLoopActivityService = {
     /**
      * Get activities with optional filters
-     * TODO: Replace with actual API call
      */
     getActivities: async (
         type?: CampusLoopActivityType,
         userId?: string
     ): Promise<CampusLoopActivity[]> => {
-        await mockDelay();
+        try {
+            const params: Record<string, any> = {};
+            if (type && type !== 'other') {
+                params.type = type;
+            }
 
-        let filtered = [...mockActivities];
+            const response = await apiService.get<any[]>(
+                API_CONFIG.ENDPOINTS.ACTIVITIES,
+                params
+            );
 
-        if (type) {
-            filtered = filtered.filter(activity => activity.type === type);
+            if (!response.success || !response.data) {
+                return [];
+            }
+
+            return response.data.map(transformActivity);
+        } catch (error) {
+            console.error('Get activities error:', error);
+            return [];
         }
+    },
 
-        if (userId) {
-            filtered = filtered.map(activity => ({
-                ...activity,
-                isJoined: activity.participantIds.includes(userId),
-            }));
+    /**
+     * Get single activity by ID
+     */
+    getActivity: async (activityId: string): Promise<CampusLoopActivity | null> => {
+        try {
+            const response = await apiService.get<any>(
+                `${API_CONFIG.ENDPOINTS.ACTIVITIES}/${activityId}`
+            );
+
+            if (!response.success || !response.data) {
+                return null;
+            }
+
+            return transformActivity(response.data);
+        } catch (error) {
+            console.error('Get activity error:', error);
+            return null;
         }
-
-        // Sort by date (newest first)
-        return filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     },
 
     /**
      * Create new activity
-     * TODO: Replace with actual API call
      */
     createActivity: async (
-        userId: string,
-        userName: string,
-        userUniversity: string,
-        data: CampusLoopCreateActivityData
+        data: CampusLoopCreateActivityData,
+        userId: string
     ): Promise<CampusLoopActivity> => {
-        await mockDelay(800);
+        try {
+            const response = await apiService.post<any>(
+                API_CONFIG.ENDPOINTS.ACTIVITIES,
+                {
+                    type: data.type,
+                    title: data.title,
+                    description: data.description,
+                    location: data.location || '',
+                    scheduledDate: data.scheduledDate?.toISOString(),
+                    maxParticipants: data.maxParticipants,
+                    tags: data.tags || [],
+                }
+            );
 
-        const newActivity: CampusLoopActivity = {
-            id: `activity_${Date.now()}`,
-            creatorId: userId,
-            creatorName: userName,
-            type: data.type,
-            title: data.title,
-            description: data.description,
-            maxParticipants: data.maxParticipants,
-            currentParticipants: 1,
-            participantIds: [userId],
-            university: userUniversity,
-            location: data.location,
-            scheduledDate: data.scheduledDate,
-            createdAt: new Date(),
-            isJoined: true,
-        };
+            if (!response.success || !response.data) {
+                throw new Error(response.message || 'Failed to create activity');
+            }
 
-        mockActivities.unshift(newActivity);
-        return newActivity;
+            return transformActivity(response.data);
+        } catch (error: any) {
+            console.error('Create activity error:', error);
+            throw new Error(error.message || 'Failed to create activity');
+        }
     },
 
     /**
-     * Join activity
-     * TODO: Replace with actual API call
+     * Join an activity
      */
-    joinActivity: async (activityId: string, userId: string): Promise<CampusLoopActivity> => {
-        await mockDelay(500);
+    joinActivity: async (activityId: string, userId: string): Promise<boolean> => {
+        try {
+            const response = await apiService.post(
+                API_CONFIG.ENDPOINTS.JOIN_ACTIVITY(activityId)
+            );
 
-        const activity = mockActivities.find(a => a.id === activityId);
-
-        if (!activity) {
-            throw new Error('Activity not found');
+            return response.success;
+        } catch (error) {
+            console.error('Join activity error:', error);
+            return false;
         }
-
-        if (activity.currentParticipants >= activity.maxParticipants) {
-            throw new Error('Activity is full');
-        }
-
-        if (activity.participantIds.includes(userId)) {
-            throw new Error('Already joined');
-        }
-
-        activity.participantIds.push(userId);
-        activity.currentParticipants += 1;
-        activity.isJoined = true;
-
-        return activity;
     },
 
     /**
-     * Leave activity
-     * TODO: Replace with actual API call
+     * Leave an activity
      */
-    leaveActivity: async (activityId: string, userId: string): Promise<CampusLoopActivity> => {
-        await mockDelay(500);
+    leaveActivity: async (activityId: string, userId: string): Promise<boolean> => {
+        try {
+            const response = await apiService.post(
+                API_CONFIG.ENDPOINTS.LEAVE_ACTIVITY(activityId)
+            );
 
-        const activity = mockActivities.find(a => a.id === activityId);
-
-        if (!activity) {
-            throw new Error('Activity not found');
+            return response.success;
+        } catch (error) {
+            console.error('Leave activity error:', error);
+            return false;
         }
-
-        const index = activity.participantIds.indexOf(userId);
-        if (index === -1) {
-            throw new Error('Not a participant');
-        }
-
-        activity.participantIds.splice(index, 1);
-        activity.currentParticipants -= 1;
-        activity.isJoined = false;
-
-        return activity;
     },
 
     /**
-     * Get activity participants
-     * TODO: Replace with actual API call
+     * Get my activities (created + joined)
      */
-    getActivityParticipants: async (activityId: string): Promise<CampusLoopActivityParticipant[]> => {
-        await mockDelay(600);
+    getMyActivities: async (type?: 'created' | 'joined'): Promise<CampusLoopActivity[]> => {
+        try {
+            const params: Record<string, any> = {};
+            if (type) {
+                params.type = type;
+            }
 
-        // Mock participants
-        return [];
+            const response = await apiService.get<any[]>(
+                API_CONFIG.ENDPOINTS.MY_ACTIVITIES,
+                params
+            );
+
+            if (!response.success || !response.data) {
+                return [];
+            }
+
+            return response.data.map(transformActivity);
+        } catch (error) {
+            console.error('Get my activities error:', error);
+            return [];
+        }
+    },
+
+    /**
+     * Update activity
+     */
+    updateActivity: async (
+        activityId: string,
+        data: Partial<CampusLoopCreateActivityData>
+    ): Promise<CampusLoopActivity | null> => {
+        try {
+            const response = await apiService.put<any>(
+                `${API_CONFIG.ENDPOINTS.ACTIVITIES}/${activityId}`,
+                data
+            );
+
+            if (!response.success || !response.data) {
+                return null;
+            }
+
+            return transformActivity(response.data);
+        } catch (error) {
+            console.error('Update activity error:', error);
+            return null;
+        }
+    },
+
+    /**
+     * Delete activity
+     */
+    deleteActivity: async (activityId: string): Promise<boolean> => {
+        try {
+            const response = await apiService.delete(
+                `${API_CONFIG.ENDPOINTS.ACTIVITIES}/${activityId}`
+            );
+
+            return response.success;
+        } catch (error) {
+            console.error('Delete activity error:', error);
+            return false;
+        }
     },
 };
+
+export default CampusLoopActivityService;

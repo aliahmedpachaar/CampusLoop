@@ -1,113 +1,116 @@
 /**
  * CampusLoop Notification Service
- * Mock notification service - ready for backend integration
+ * Connects to the backend API for notifications
  */
 
-import { CampusLoopNotification, CampusLoopNotificationType } from '../types/notification';
+import { apiService } from './api';
+import { API_CONFIG } from '../config/api';
 
-const mockDelay = (ms: number = 500) => new Promise(resolve => setTimeout(resolve, ms));
+export interface CampusLoopNotification {
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    isRead: boolean;
+    sender?: {
+        id: string;
+        fullName: string;
+        avatar?: string;
+    };
+    activity?: {
+        id: string;
+        title: string;
+        type: string;
+    };
+    createdAt: Date;
+}
 
-// Mock notifications database
-let mockNotifications: CampusLoopNotification[] = [
-    {
-        id: 'notif_1',
-        userId: '1',
-        type: 'activity_join',
-        title: 'New participant',
-        message: 'Sarah Johnson joined your activity "Mobile App Development Team"',
-        relatedId: 'activity_2',
-        fromUserId: '2',
-        fromUserName: 'Sarah Johnson',
-        isRead: false,
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    },
-    {
-        id: 'notif_2',
-        userId: '1',
-        type: 'post_like',
-        title: 'Post liked',
-        message: 'Sarah Johnson liked your post',
-        relatedId: 'post_2',
-        fromUserId: '2',
-        fromUserName: 'Sarah Johnson',
-        isRead: false,
-        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    },
-    {
-        id: 'notif_3',
-        userId: '1',
-        type: 'message',
-        title: 'New message',
-        message: 'Sarah Johnson sent you a message',
-        relatedId: 'conv_1',
-        fromUserId: '2',
-        fromUserName: 'Sarah Johnson',
-        isRead: true,
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    },
-];
+// Transform backend notification to app format
+const transformNotification = (backendNotification: any): CampusLoopNotification => {
+    return {
+        id: backendNotification._id || backendNotification.id,
+        type: backendNotification.type,
+        title: backendNotification.title,
+        message: backendNotification.message,
+        isRead: backendNotification.isRead,
+        sender: backendNotification.sender ? {
+            id: backendNotification.sender._id || backendNotification.sender.id,
+            fullName: backendNotification.sender.fullName,
+            avatar: backendNotification.sender.avatar,
+        } : undefined,
+        activity: backendNotification.activity ? {
+            id: backendNotification.activity._id || backendNotification.activity.id,
+            title: backendNotification.activity.title,
+            type: backendNotification.activity.type,
+        } : undefined,
+        createdAt: new Date(backendNotification.createdAt),
+    };
+};
 
 export const CampusLoopNotificationService = {
     /**
      * Get user notifications
-     * TODO: Replace with actual API call
      */
-    getNotifications: async (userId: string): Promise<CampusLoopNotification[]> => {
-        await mockDelay();
+    getNotifications: async (): Promise<{ notifications: CampusLoopNotification[]; unreadCount: number }> => {
+        try {
+            const response = await apiService.get<any>(API_CONFIG.ENDPOINTS.NOTIFICATIONS);
 
-        const userNotifications = mockNotifications.filter(notif => notif.userId === userId);
+            if (!response.success || !response.data) {
+                return { notifications: [], unreadCount: 0 };
+            }
 
-        // Sort by date (newest first)
-        return userNotifications.sort(
-            (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-        );
-    },
-
-    /**
-     * Get unread count
-     * TODO: Replace with actual API call
-     */
-    getUnreadCount: async (userId: string): Promise<number> => {
-        await mockDelay(300);
-
-        return mockNotifications.filter(notif => notif.userId === userId && !notif.isRead)
-            .length;
-    },
-
-    /**
-     * Mark notification as read
-     * TODO: Replace with actual API call
-     */
-    markAsRead: async (notificationId: string): Promise<void> => {
-        await mockDelay(200);
-
-        const notification = mockNotifications.find(n => n.id === notificationId);
-        if (notification) {
-            notification.isRead = true;
+            return {
+                notifications: response.data.map(transformNotification),
+                unreadCount: (response as any).unreadCount || 0,
+            };
+        } catch (error) {
+            console.error('Get notifications error:', error);
+            return { notifications: [], unreadCount: 0 };
         }
     },
 
     /**
-     * Mark all as read
-     * TODO: Replace with actual API call
+     * Mark notification as read
      */
-    markAllAsRead: async (userId: string): Promise<void> => {
-        await mockDelay(300);
-
-        mockNotifications
-            .filter(notif => notif.userId === userId)
-            .forEach(notif => {
-                notif.isRead = true;
-            });
+    markAsRead: async (notificationId: string): Promise<boolean> => {
+        try {
+            const response = await apiService.put(
+                API_CONFIG.ENDPOINTS.MARK_READ(notificationId)
+            );
+            return response.success;
+        } catch (error) {
+            console.error('Mark as read error:', error);
+            return false;
+        }
     },
 
     /**
-     * Clear all notifications
-     * TODO: Replace with actual API call
+     * Mark all notifications as read
      */
-    clearAll: async (userId: string): Promise<void> => {
-        await mockDelay(300);
+    markAllAsRead: async (): Promise<boolean> => {
+        try {
+            const response = await apiService.put(API_CONFIG.ENDPOINTS.MARK_ALL_READ);
+            return response.success;
+        } catch (error) {
+            console.error('Mark all as read error:', error);
+            return false;
+        }
+    },
 
-        mockNotifications = mockNotifications.filter(notif => notif.userId !== userId);
+    /**
+     * Delete notification
+     */
+    deleteNotification: async (notificationId: string): Promise<boolean> => {
+        try {
+            const response = await apiService.delete(
+                `${API_CONFIG.ENDPOINTS.NOTIFICATIONS}/${notificationId}`
+            );
+            return response.success;
+        } catch (error) {
+            console.error('Delete notification error:', error);
+            return false;
+        }
     },
 };
+
+export default CampusLoopNotificationService;

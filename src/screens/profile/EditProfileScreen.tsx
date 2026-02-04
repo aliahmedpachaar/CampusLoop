@@ -31,13 +31,17 @@ export const EditProfileScreen: React.FC<any> = ({ navigation }) => {
     const handleSave = async () => {
         setLoading(true);
         try {
-            const updatedUser = await CampusLoopUserService.updateProfile(user.id, {
+            const updatedUser = await CampusLoopUserService.updateProfile({
                 bio,
                 semester,
             });
-            updateUser(updatedUser);
-            Alert.alert('Success', 'Profile updated successfully');
-            navigation.goBack();
+            if (updatedUser) {
+                updateUser(updatedUser);
+                Alert.alert('Success', 'Profile updated successfully');
+                navigation.goBack();
+            } else {
+                Alert.alert('Error', 'Failed to update profile');
+            }
         } catch (error) {
             Alert.alert('Error', 'Failed to update profile');
         } finally {

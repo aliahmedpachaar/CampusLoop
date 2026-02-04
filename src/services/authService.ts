@@ -1,136 +1,153 @@
 /**
  * CampusLoop Authentication Service
- * Mock authentication service - ready for backend integration
+ * Connects to the backend API for authentication
  */
 
 import { CampusLoopUser, CampusLoopSignupData } from '../types/user';
-
-// Mock delay to simulate network requests
-const mockDelay = (ms: number = 1000) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Mock user database (in-memory)
-let mockUsers: CampusLoopUser[] = [
-    {
-        id: '1',
-        email: 'demo@university.edu',
-        fullName: 'Demo Student',
-        university: 'Stanford University',
-        course: 'Computer Science',
-        semester: 'Semester 3',
-        interests: ['Coding', 'Web Development', 'Sports', 'Music'],
-        profilePicture: undefined,
-        bio: 'CS student passionate about building cool stuff!',
-        createdAt: new Date('2024-01-15'),
-        locationEnabled: false,
-    },
-];
-
-// Mock password storage (DO NOT use in production!)
-const mockPasswords: Record<string, string> = {
-    'demo@university.edu': 'password123',
-};
+import { apiService } from './api';
+import { API_CONFIG } from '../config/api';
+import { CampusLoopStorage } from '../utils/storage';
 
 export interface CampusLoopAuthResponse {
     user: CampusLoopUser;
     token: string;
 }
 
+// Transform backend user to app user format
+const transformUser = (backendUser: any): CampusLoopUser => {
+    return {
+        id: backendUser.id || backendUser._id,
+        email: backendUser.email,
+        fullName: backendUser.fullName,
+        university: backendUser.university,
+        campus: backendUser.campus,
+        course: backendUser.course,
+        semester: backendUser.semester,
+        interests: backendUser.interests || [],
+        profilePicture: backendUser.avatar,
+        bio: backendUser.bio || '',
+        createdAt: new Date(backendUser.createdAt),
+        locationEnabled: false,
+    };
+};
+
 export const CampusLoopAuthService = {
     /**
      * Login with email and password
-     * TODO: Replace with actual API call
      */
     login: async (email: string, password: string): Promise<CampusLoopAuthResponse> => {
-        await mockDelay(800);
+        try {
+            const response = await apiService.post<{ user: any; token: string }>(
+                API_CONFIG.ENDPOINTS.LOGIN,
+                { email, password }
+            );
 
-        const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+            if (!response.success || !response.data) {
+                throw new Error(response.message || 'Login failed');
+            }
 
-        if (!user || mockPasswords[email] !== password) {
-            throw new Error('Invalid email or password');
+            const { user, token } = response.data;
+
+            // Save token to storage
+            await CampusLoopStorage.saveAuthToken(token);
+
+            return {
+                user: transformUser(user),
+                token,
+            };
+        } catch (error: any) {
+            console.error('Login error:', error);
+            throw new Error(error.message || 'Login failed. Please try again.');
         }
-
-        const token = `mock_token_${user.id}_${Date.now()}`;
-
-        return { user, token };
     },
 
     /**
      * Sign up new user
-     * TODO: Replace with actual API call
      */
     signup: async (data: CampusLoopSignupData): Promise<CampusLoopAuthResponse> => {
-        await mockDelay(1000);
+        try {
+            const response = await apiService.post<{ user: any; token: string }>(
+                API_CONFIG.ENDPOINTS.SIGNUP,
+                {
+                    email: data.email,
+                    password: data.password,
+                    fullName: data.fullName,
+                    university: data.university,
+                    campus: data.campus || '',
+                    course: data.course || '',
+                    semester: data.semester || '',
+                    interests: data.interests || [],
+                }
+            );
 
-        // Check if email already exists
-        const existingUser = mockUsers.find(
-            u => u.email.toLowerCase() === data.email.toLowerCase()
-        );
+            if (!response.success || !response.data) {
+                throw new Error(response.message || 'Signup failed');
+            }
 
-        if (existingUser) {
-            throw new Error('Email already registered');
+            const { user, token } = response.data;
+
+            // Save token to storage
+            await CampusLoopStorage.saveAuthToken(token);
+
+            return {
+                user: transformUser(user),
+                token,
+            };
+        } catch (error: any) {
+            console.error('Signup error:', error);
+            throw new Error(error.message || 'Signup failed. Please try again.');
         }
-
-        // Create new user
-        const newUser: CampusLoopUser = {
-            id: `user_${Date.now()}`,
-            email: data.email,
-            fullName: data.fullName,
-            university: data.university,
-            course: data.course,
-            semester: data.semester,
-            interests: data.interests,
-            profilePicture: data.profilePicture,
-            bio: '',
-            createdAt: new Date(),
-            locationEnabled: false,
-        };
-
-        mockUsers.push(newUser);
-        mockPasswords[data.email] = data.password;
-
-        const token = `mock_token_${newUser.id}_${Date.now()}`;
-
-        return { user: newUser, token };
     },
 
     /**
-     * Verify token and get user
-     * TODO: Replace with actual API call
+     * Verify token and get current user
      */
     verifyToken: async (token: string): Promise<CampusLoopUser | null> => {
-        await mockDelay(500);
+        try {
+            // Token is already stored, apiService will use it
+            const response = await apiService.get<any>(API_CONFIG.ENDPOINTS.ME);
 
-        // Extract user ID from mock token
-        const match = token.match(/mock_token_(.+?)_/);
-        if (!match) return null;
+            if (!response.success || !response.data) {
+                return null;
+            }
 
-        const userId = match[1];
-        const user = mockUsers.find(u => u.id === userId);
-
-        return user || null;
+            return transformUser(response.data);
+        } catch (error) {
+            console.error('Token verification error:', error);
+            return null;
+        }
     },
 
     /**
-     * Logout (client-side only for mock)
+     * Logout user
      */
     logout: async (): Promise<void> => {
-        await mockDelay(300);
-        // In real implementation, invalidate token on server
+        await CampusLoopStorage.clearAll();
     },
 
     /**
-     * Validate email format
+     * Forgot password
      */
-    validateEmail: (email: string): boolean => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
+    forgotPassword: async (email: string): Promise<boolean> => {
+        try {
+            const response = await apiService.post(
+                API_CONFIG.ENDPOINTS.FORGOT_PASSWORD,
+                { email }
+            );
+            return response.success;
+        } catch (error) {
+            console.error('Forgot password error:', error);
+            return false;
+        }
     },
 
     /**
-     * Check if email is from university domain
+     * Get stored auth token
      */
-    isUniversityEmail: (email: string): boolean => {
-        const universityDomains = ['.edu', '.ac.uk', '.edu.au', '.edu.sg'];
-        return universityDomains.some(domain => email.toLowerCase().endsWith(domain));
+    getStoredToken: async (): Promise<string | null> => {
+        return await CampusLoopStorage.getAuthToken();
     },
 };
+
+export default CampusLoopAuthService;
+

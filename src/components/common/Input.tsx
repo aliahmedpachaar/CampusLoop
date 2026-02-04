@@ -81,11 +81,15 @@ export const CampusLoopInput: React.FC<CampusLoopInputProps> = ({
                         {
                             color: colors.text,
                             fontSize: CampusLoopTypography.fontSize.base,
+                            backgroundColor: 'transparent',
                         },
                         leftIcon ? { paddingLeft: 0 } : undefined,
                         rightIcon ? { paddingRight: 0 } : undefined,
+                        style,
                     ]}
                     placeholderTextColor={colors.textTertiary}
+                    autoCorrect={false}
+                    textContentType={props.secureTextEntry ? 'oneTimeCode' : props.textContentType}
                     onFocus={(e) => {
                         setIsFocused(true);
                         props.onFocus?.(e);
