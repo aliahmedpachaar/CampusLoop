@@ -41,11 +41,11 @@ const mockNotifications = [
     },
 ];
 
-export const NotificationsScreen: React.FC<any> = ({ navigation }) => {
+const NotificationsScreen: React.FC<any> = ({ navigation }) => {
     const { colors } = useCampusLoopTheme();
 
     const renderItem = ({ item }: { item: any }) => (
-        <CampusLoopCard style={[styles.notificationCard, !item.read && { backgroundColor: colors.surfaceHighlight }]}>
+        <CampusLoopCard style={[styles.notificationCard, !item.read ? { backgroundColor: colors.primary + '10' } : undefined]}>
             <View style={styles.notificationContent}>
                 <Text style={styles.icon}>{item.type === 'like' ? '❤️' : item.type === 'comment' ? '💬' : '👋'}</Text>
                 <View style={styles.textContainer}>
@@ -81,6 +81,7 @@ export const NotificationsScreen: React.FC<any> = ({ navigation }) => {
         </View>
     );
 };
+export default NotificationsScreen;
 
 const styles = StyleSheet.create({
     container: {

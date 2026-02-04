@@ -57,7 +57,7 @@ export const CampusLoopCategoryChip: React.FC<CampusLoopCategoryChipProps> = ({
                         fontSize: CampusLoopTypography.fontSize.sm,
                         fontWeight: CampusLoopTypography.fontWeight.medium,
                     },
-                    icon && { marginLeft: CampusLoopSpacing.xs },
+                    icon ? { marginLeft: CampusLoopSpacing.xs } : undefined,
                 ]}>
                 {label}
             </Text>

@@ -1,9 +1,9 @@
 /**
- * CampusLoop Enhanced Login Screen
- * Beautiful animated login with mascot character
+ * CampusLoop Login Screen
+ * Clean and simple login design
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -12,26 +12,33 @@ import {
     KeyboardAvoidingView,
     Platform,
     Alert,
-    Animated,
     TouchableOpacity,
     Dimensions,
+    StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withTiming,
+    withSequence,
+    FadeInDown,
+    FadeInUp,
+} from 'react-native-reanimated';
 import { useCampusLoopTheme } from '../../context/ThemeContext';
 import { useCampusLoopAuth } from '../../context/AuthContext';
-import { CampusLoopButton } from '../../components/common/Button';
 import { CampusLoopInput } from '../../components/common/Input';
-import { AnimatedMascot } from '../../components/common/AnimatedMascot';
 import { CampusLoopValidation } from '../../utils/validation';
 import {
     CampusLoopSpacing,
     CampusLoopTypography,
     CampusLoopBorderRadius,
     CampusLoopShadows,
-    CampusLoopGradients,
 } from '../../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 interface LoginScreenProps {
     navigation: any;
@@ -46,28 +53,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({ email: '', password: '' });
-    const [isPasswordFocused, setIsPasswordFocused] = useState(false);
 
     // Animation values
-    const shakeAnimation = useRef(new Animated.Value(0)).current;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(50)).current;
+    const shakeX = useSharedValue(0);
+    const formScale = useSharedValue(0.95);
 
-    // Entrance animation
-    React.useEffect(() => {
-        Animated.parallel([
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 600,
-                useNativeDriver: true,
-            }),
-            Animated.spring(slideAnim, {
-                toValue: 0,
-                friction: 8,
-                tension: 40,
-                useNativeDriver: true,
-            }),
-        ]).start();
+    useEffect(() => {
+        formScale.value = withSpring(1, { damping: 15, stiffness: 100 });
     }, []);
 
     const validate = (): boolean => {
@@ -78,7 +70,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             newErrors.email = 'Email is required';
             isValid = false;
         } else if (!CampusLoopValidation.isValidEmail(email)) {
-            newErrors.email = 'Invalid email format';
+            newErrors.email = 'Please enter a valid email';
             isValid = false;
         }
 
@@ -91,245 +83,235 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         return isValid;
     };
 
-    const triggerShakeAnimation = () => {
-        Animated.sequence([
-            Animated.timing(shakeAnimation, {
-                toValue: 10,
-                duration: 50,
-                useNativeDriver: true,
-            }),
-            Animated.timing(shakeAnimation, {
-                toValue: -10,
-                duration: 50,
-                useNativeDriver: true,
-            }),
-            Animated.timing(shakeAnimation, {
-                toValue: 10,
-                duration: 50,
-                useNativeDriver: true,
-            }),
-            Animated.timing(shakeAnimation, {
-                toValue: 0,
-                duration: 50,
-                useNativeDriver: true,
-            }),
-        ]).start();
+    const triggerShake = () => {
+        shakeX.value = withSequence(
+            withTiming(-10, { duration: 50 }),
+            withTiming(10, { duration: 50 }),
+            withTiming(-10, { duration: 50 }),
+            withTiming(10, { duration: 50 }),
+            withTiming(0, { duration: 50 })
+        );
     };
 
     const handleLogin = async () => {
         if (!validate()) {
-            triggerShakeAnimation();
+            triggerShake();
             return;
         }
 
         setLoading(true);
         try {
             await login(email, password);
-            // Navigation handled by auth state change
         } catch (error: any) {
-            triggerShakeAnimation();
-            Alert.alert('Login Failed', error.message || 'Invalid credentials');
+            triggerShake();
+            Alert.alert('Login Failed', error.message || 'Invalid credentials. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
-            <LinearGradient
-                colors={[colors.gradientStart, colors.gradientEnd]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.gradient}
-            >
-                {/* Floating particles effect */}
-                <View style={styles.particlesContainer}>
-                    {[...Array(6)].map((_, i) => (
-                        <FloatingParticle key={i} delay={i * 200} />
-                    ))}
-                </View>
+    const shakeStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: shakeX.value }],
+    }));
 
+    const formAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: formScale.value }],
+    }));
+
+    return (
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle="dark-content" />
+
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.keyboardView}
+            >
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
+                    {/* Back Button */}
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    </TouchableOpacity>
+
+                    {/* Header */}
                     <Animated.View
+                        entering={FadeInDown.delay(100).duration(600)}
+                        style={styles.header}
+                    >
+                        <Text style={styles.logoEmoji}>🎓</Text>
+                        <Text style={[styles.appName, { color: colors.primary }]}>
+                            CampusLoop
+                        </Text>
+                        <Text style={[styles.welcomeText, { color: colors.text }]}>
+                            Welcome back!
+                        </Text>
+                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                            Sign in to continue connecting with your campus
+                        </Text>
+                    </Animated.View>
+
+                    {/* Form Card */}
+                    <Animated.View
+                        entering={FadeInUp.delay(200).duration(600)}
                         style={[
-                            styles.content,
-                            {
-                                opacity: fadeAnim,
-                                transform: [
-                                    { translateY: slideAnim },
-                                    { translateX: shakeAnimation },
-                                ],
-                            },
+                            styles.formCard,
+                            { backgroundColor: colors.surface },
+                            shakeStyle,
+                            formAnimatedStyle,
                         ]}
                     >
-                        {/* Header */}
-                        <View style={styles.header}>
-                            <Text style={styles.appName}>CampusLoop</Text>
-                            <Text style={styles.tagline}>
-                                Connect. Collaborate. Succeed.
-                            </Text>
-                        </View>
-
-                        {/* Animated Mascot */}
-                        <AnimatedMascot
-                            isPasswordFocused={isPasswordFocused}
-                            showPassword={showPassword}
-                        />
-
-                        {/* Login Form Card */}
-                        <View style={[styles.formCard, { backgroundColor: colors.surface }]}>
-                            <Text style={[styles.welcomeText, { color: colors.text }]}>
-                                Welcome Back! 👋
-                            </Text>
-                            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                                Login to continue your journey
-                            </Text>
-
-                            <View style={styles.form}>
-                                <CampusLoopInput
-                                    label="Email"
-                                    placeholder="your.email@university.edu"
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    error={errors.email}
-                                />
-
-                                <CampusLoopInput
-                                    label="Password"
-                                    placeholder="Enter your password"
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry={!showPassword}
-                                    error={errors.password}
-                                    onFocus={() => setIsPasswordFocused(true)}
-                                    onBlur={() => setIsPasswordFocused(false)}
-                                    rightIcon={
-                                        <TouchableOpacity
-                                            onPress={() => setShowPassword(!showPassword)}
-                                        >
-                                            <Text style={styles.eyeIcon}>
-                                                {showPassword ? '👁️' : '👁️‍🗨️'}
-                                            </Text>
-                                        </TouchableOpacity>
+                        <View style={styles.form}>
+                            {/* Email Input */}
+                            <View style={styles.inputGroup}>
+                                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                                    Email
+                                </Text>
+                                <View style={[
+                                    styles.inputContainer,
+                                    {
+                                        backgroundColor: colors.background,
+                                        borderColor: errors.email ? colors.error : colors.border,
                                     }
-                                />
-
-                                <TouchableOpacity style={styles.forgotPassword}>
-                                    <Text style={[styles.forgotText, { color: colors.primary }]}>
-                                        Forgot Password?
-                                    </Text>
-                                </TouchableOpacity>
-
-                                <CampusLoopButton
-                                    title="Login"
-                                    onPress={handleLogin}
-                                    loading={loading}
-                                    fullWidth
-                                    style={styles.loginButton}
-                                />
-
-                                <View style={styles.dividerContainer}>
-                                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                                    <Text style={[styles.dividerText, { color: colors.textSecondary }]}>
-                                        OR
-                                    </Text>
-                                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                                ]}>
+                                    <Ionicons
+                                        name="mail-outline"
+                                        size={20}
+                                        color={colors.textTertiary}
+                                        style={styles.inputIcon}
+                                    />
+                                    <CampusLoopInput
+                                        placeholder="your.email@university.edu"
+                                        value={email}
+                                        onChangeText={setEmail}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        style={styles.input}
+                                        containerStyle={styles.inputWrapper}
+                                    />
                                 </View>
-
-                                <View style={styles.signupContainer}>
-                                    <Text style={[styles.signupText, { color: colors.textSecondary }]}>
-                                        Don't have an account?{' '}
+                                {errors.email ? (
+                                    <Text style={[styles.errorText, { color: colors.error }]}>
+                                        {errors.email}
                                     </Text>
-                                    <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                                        <Text style={[styles.signupLink, { color: colors.primary }]}>
-                                            Sign Up
-                                        </Text>
+                                ) : null}
+                            </View>
+
+                            {/* Password Input */}
+                            <View style={styles.inputGroup}>
+                                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                                    Password
+                                </Text>
+                                <View style={[
+                                    styles.inputContainer,
+                                    {
+                                        backgroundColor: colors.background,
+                                        borderColor: errors.password ? colors.error : colors.border,
+                                    }
+                                ]}>
+                                    <Ionicons
+                                        name="lock-closed-outline"
+                                        size={20}
+                                        color={colors.textTertiary}
+                                        style={styles.inputIcon}
+                                    />
+                                    <CampusLoopInput
+                                        placeholder="Enter your password"
+                                        value={password}
+                                        onChangeText={setPassword}
+                                        secureTextEntry={!showPassword}
+                                        style={styles.input}
+                                        containerStyle={styles.inputWrapper}
+                                    />
+                                    <TouchableOpacity
+                                        onPress={() => setShowPassword(!showPassword)}
+                                        style={styles.eyeButton}
+                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                    >
+                                        <Ionicons
+                                            name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                                            size={22}
+                                            color={colors.textTertiary}
+                                        />
                                     </TouchableOpacity>
                                 </View>
+                                {errors.password ? (
+                                    <Text style={[styles.errorText, { color: colors.error }]}>
+                                        {errors.password}
+                                    </Text>
+                                ) : null}
                             </View>
-                        </View>
 
-                        {/* Demo Hint */}
-                        <View style={styles.demoHint}>
-                            <Text style={styles.demoText}>
-                                💡 Demo: demo@university.edu / password123
-                            </Text>
+                            {/* Forgot Password */}
+                            <TouchableOpacity
+                                style={styles.forgotPassword}
+                                onPress={() => navigation.navigate('ForgotPassword')}
+                            >
+                                <Text style={[styles.forgotText, { color: colors.primary }]}>
+                                    Forgot Password?
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* Login Button */}
+                            <TouchableOpacity
+                                style={[styles.loginButton, { opacity: loading ? 0.7 : 1 }]}
+                                onPress={handleLogin}
+                                disabled={loading}
+                                activeOpacity={0.8}
+                            >
+                                <LinearGradient
+                                    colors={[colors.gradientStart, colors.gradientEnd]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.loginGradient}
+                                >
+                                    <Text style={styles.loginButtonText}>
+                                        {loading ? 'Signing in...' : 'Sign In'}
+                                    </Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
                         </View>
                     </Animated.View>
+
+                    {/* Divider */}
+                    <View style={styles.dividerContainer}>
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                        <Text style={[styles.dividerText, { color: colors.textTertiary }]}>
+                            or
+                        </Text>
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                    </View>
+
+                    {/* Sign Up Link */}
+                    <View style={styles.signupContainer}>
+                        <Text style={[styles.signupText, { color: colors.textSecondary }]}>
+                            Don't have an account?{' '}
+                        </Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+                            <Text style={[styles.signupLink, { color: colors.primary }]}>
+                                Create Account
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Demo Credentials */}
+                    <Animated.View
+                        entering={FadeInUp.delay(400).duration(400)}
+                        style={[styles.demoCard, { backgroundColor: colors.primary + '10' }]}
+                    >
+                        <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
+                        <Text style={[styles.demoText, { color: colors.primary }]}>
+                            Demo: demo@university.edu / password123
+                        </Text>
+                    </Animated.View>
                 </ScrollView>
-            </LinearGradient>
-        </KeyboardAvoidingView>
-    );
-};
-
-// Floating Particle Component
-const FloatingParticle: React.FC<{ delay: number }> = ({ delay }) => {
-    const animValue = useRef(new Animated.Value(0)).current;
-    const opacity = useRef(new Animated.Value(0)).current;
-
-    React.useEffect(() => {
-        setTimeout(() => {
-            Animated.loop(
-                Animated.parallel([
-                    Animated.sequence([
-                        Animated.timing(animValue, {
-                            toValue: 1,
-                            duration: 3000 + Math.random() * 2000,
-                            useNativeDriver: true,
-                        }),
-                        Animated.timing(animValue, {
-                            toValue: 0,
-                            duration: 0,
-                            useNativeDriver: true,
-                        }),
-                    ]),
-                    Animated.sequence([
-                        Animated.timing(opacity, {
-                            toValue: 0.6,
-                            duration: 1000,
-                            useNativeDriver: true,
-                        }),
-                        Animated.timing(opacity, {
-                            toValue: 0,
-                            duration: 2000,
-                            useNativeDriver: true,
-                        }),
-                    ]),
-                ])
-            ).start();
-        }, delay);
-    }, []);
-
-    const translateY = animValue.interpolate({
-        inputRange: [0, 1],
-        outputRange: [600, -100],
-    });
-
-    const translateX = animValue.interpolate({
-        inputRange: [0, 0.5, 1],
-        outputRange: [0, 50, -30],
-    });
-
-    return (
-        <Animated.View
-            style={[
-                styles.particle,
-                {
-                    left: Math.random() * width,
-                    opacity,
-                    transform: [{ translateY }, { translateX }],
-                },
-            ]}
-        />
+            </KeyboardAvoidingView>
+        </View>
     );
 };
 
@@ -337,78 +319,110 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    gradient: {
+    keyboardView: {
         flex: 1,
-    },
-    particlesContainer: {
-        ...StyleSheet.absoluteFillObject,
-        overflow: 'hidden',
-    },
-    particle: {
-        position: 'absolute',
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
     },
     scrollContent: {
         flexGrow: 1,
-        justifyContent: 'center',
-        padding: CampusLoopSpacing.base,
+        paddingHorizontal: CampusLoopSpacing.xl,
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingBottom: CampusLoopSpacing['2xl'],
     },
-    content: {
-        width: '100%',
+    backButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: CampusLoopSpacing.xl,
     },
     header: {
         alignItems: 'center',
-        marginBottom: CampusLoopSpacing.base,
+        marginBottom: CampusLoopSpacing.xl,
+    },
+    logoEmoji: {
+        fontSize: 56,
+        marginBottom: CampusLoopSpacing.md,
     },
     appName: {
-        fontSize: CampusLoopTypography.fontSize['4xl'],
-        fontWeight: CampusLoopTypography.fontWeight.extrabold,
-        color: '#FFFFFF',
-        textShadowColor: 'rgba(0, 0, 0, 0.3)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4,
-    },
-    tagline: {
-        fontSize: CampusLoopTypography.fontSize.base,
-        color: '#FFFFFF',
-        opacity: 0.9,
-        marginTop: CampusLoopSpacing.xs,
-    },
-    formCard: {
-        borderRadius: CampusLoopBorderRadius.xl,
-        padding: CampusLoopSpacing.xl,
-        ...CampusLoopShadows.xl,
-    },
-    welcomeText: {
         fontSize: CampusLoopTypography.fontSize['2xl'],
         fontWeight: CampusLoopTypography.fontWeight.bold,
-        textAlign: 'center',
+        marginBottom: CampusLoopSpacing.md,
+    },
+    welcomeText: {
+        fontSize: CampusLoopTypography.fontSize.xl,
+        fontWeight: CampusLoopTypography.fontWeight.semibold,
+        marginBottom: CampusLoopSpacing.xs,
     },
     subtitle: {
         fontSize: CampusLoopTypography.fontSize.base,
         textAlign: 'center',
-        marginTop: CampusLoopSpacing.xs,
-        marginBottom: CampusLoopSpacing.xl,
+    },
+    formCard: {
+        borderRadius: CampusLoopBorderRadius['2xl'],
+        padding: CampusLoopSpacing.xl,
+        ...CampusLoopShadows.lg,
     },
     form: {
-        width: '100%',
+        gap: CampusLoopSpacing.lg,
     },
-    eyeIcon: {
-        fontSize: 20,
+    inputGroup: {
+        gap: CampusLoopSpacing.sm,
     },
-    forgotPassword: {
-        alignSelf: 'flex-end',
-        marginTop: CampusLoopSpacing.sm,
-    },
-    forgotText: {
+    inputLabel: {
         fontSize: CampusLoopTypography.fontSize.sm,
         fontWeight: CampusLoopTypography.fontWeight.semibold,
     },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: CampusLoopBorderRadius.lg,
+        borderWidth: 1.5,
+        paddingHorizontal: CampusLoopSpacing.base,
+    },
+    inputIcon: {
+        marginRight: CampusLoopSpacing.sm,
+    },
+    inputWrapper: {
+        flex: 1,
+        marginBottom: 0,
+        borderWidth: 0,
+        backgroundColor: 'transparent',
+    },
+    input: {
+        flex: 1,
+        paddingVertical: CampusLoopSpacing.base,
+    },
+    eyeButton: {
+        padding: CampusLoopSpacing.xs,
+    },
+    errorText: {
+        fontSize: CampusLoopTypography.fontSize.xs,
+        marginTop: 2,
+    },
+    forgotPassword: {
+        alignSelf: 'flex-end',
+        marginTop: -CampusLoopSpacing.sm,
+    },
+    forgotText: {
+        fontSize: CampusLoopTypography.fontSize.sm,
+        fontWeight: CampusLoopTypography.fontWeight.medium,
+    },
     loginButton: {
-        marginTop: CampusLoopSpacing.xl,
+        borderRadius: CampusLoopBorderRadius.lg,
+        overflow: 'hidden',
+        marginTop: CampusLoopSpacing.sm,
+    },
+    loginGradient: {
+        paddingVertical: CampusLoopSpacing.base,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    loginButtonText: {
+        color: '#FFFFFF',
+        fontSize: CampusLoopTypography.fontSize.lg,
+        fontWeight: CampusLoopTypography.fontWeight.semibold,
     },
     dividerContainer: {
         flexDirection: 'row',
@@ -422,7 +436,6 @@ const styles = StyleSheet.create({
     dividerText: {
         marginHorizontal: CampusLoopSpacing.base,
         fontSize: CampusLoopTypography.fontSize.sm,
-        fontWeight: CampusLoopTypography.fontWeight.medium,
     },
     signupContainer: {
         flexDirection: 'row',
@@ -434,18 +447,21 @@ const styles = StyleSheet.create({
     },
     signupLink: {
         fontSize: CampusLoopTypography.fontSize.base,
-        fontWeight: CampusLoopTypography.fontWeight.bold,
+        fontWeight: CampusLoopTypography.fontWeight.semibold,
     },
-    demoHint: {
+    demoCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: CampusLoopSpacing.sm,
         marginTop: CampusLoopSpacing.xl,
         padding: CampusLoopSpacing.base,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        borderRadius: CampusLoopBorderRadius.base,
-        alignItems: 'center',
+        borderRadius: CampusLoopBorderRadius.lg,
     },
     demoText: {
-        color: '#FFFFFF',
         fontSize: CampusLoopTypography.fontSize.sm,
         fontWeight: CampusLoopTypography.fontWeight.medium,
     },
 });
+
+export default LoginScreen;

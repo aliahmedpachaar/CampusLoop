@@ -25,6 +25,7 @@ interface CampusLoopInputProps extends TextInputProps {
     leftIcon?: React.ReactNode;
     rightIcon?: React.ReactNode;
     onRightIconPress?: () => void;
+    containerStyle?: any;
 }
 
 export const CampusLoopInput: React.FC<CampusLoopInputProps> = ({
@@ -34,6 +35,7 @@ export const CampusLoopInput: React.FC<CampusLoopInputProps> = ({
     rightIcon,
     onRightIconPress,
     style,
+    containerStyle,
     ...props
 }) => {
     const { colors } = useCampusLoopTheme();
@@ -46,7 +48,7 @@ export const CampusLoopInput: React.FC<CampusLoopInputProps> = ({
     };
 
     return (
-        <View style={[styles.container, style]}>
+        <View style={[styles.container, containerStyle]}>
             {label && (
                 <Text
                     style={[

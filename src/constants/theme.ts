@@ -1,23 +1,24 @@
 /**
- * Enhanced Theme Configuration
- * Extended color palette, animations, and design tokens
+ * CampusLoop Theme Configuration
+ * Clean, Modern, Minimal Design System
+ * Primary: Teal/Mint | Accent: Warm Coral | Neutrals: Slate
  */
 
 export const CampusLoopColors = {
     light: {
-        // Primary Brand Colors
-        primary: '#6366F1',
-        primaryLight: '#818CF8',
-        primaryDark: '#4F46E5',
+        // Primary Brand Colors - Clean Teal
+        primary: '#0D9488',
+        primaryLight: '#14B8A6',
+        primaryDark: '#0F766E',
 
-        // Secondary Colors
-        secondary: '#EC4899',
-        secondaryLight: '#F472B6',
-        secondaryDark: '#DB2777',
+        // Secondary Colors - Warm Coral
+        secondary: '#F97316',
+        secondaryLight: '#FB923C',
+        secondaryDark: '#EA580C',
 
-        // Accent Colors
-        accent: '#8B5CF6',
-        accentLight: '#A78BFA',
+        // Accent Colors - Soft Blue
+        accent: '#0EA5E9',
+        accentLight: '#38BDF8',
 
         // Background Colors
         background: '#F8FAFC',
@@ -25,8 +26,8 @@ export const CampusLoopColors = {
         surfaceElevated: '#FFFFFF',
 
         // Text Colors
-        text: '#1E293B',
-        textSecondary: '#64748B',
+        text: '#0F172A',
+        textSecondary: '#475569',
         textTertiary: '#94A3B8',
         textInverse: '#FFFFFF',
 
@@ -37,45 +38,49 @@ export const CampusLoopColors = {
         warningLight: '#FBBF24',
         error: '#EF4444',
         errorLight: '#F87171',
-        info: '#3B82F6',
-        infoLight: '#60A5FA',
+        info: '#0EA5E9',
+        infoLight: '#38BDF8',
 
         // UI Colors
         border: '#E2E8F0',
         borderLight: '#F1F5F9',
         divider: '#E2E8F0',
-        overlay: 'rgba(0, 0, 0, 0.5)',
+        overlay: 'rgba(15, 23, 42, 0.5)',
 
         // Gradient Colors
-        gradientStart: '#6366F1',
-        gradientEnd: '#EC4899',
-        gradientAccent: '#8B5CF6',
+        gradientStart: '#0D9488',
+        gradientEnd: '#0EA5E9',
+        gradientAccent: '#14B8A6',
 
-        // Category Colors
-        categoryAssignment: '#F59E0B',
-        categoryCoding: '#8B5CF6',
-        categoryActivities: '#EC4899',
+        // Category Colors - Harmonious Palette
+        categoryStudy: '#0D9488',
+        categoryHelp: '#F59E0B',
         categorySports: '#10B981',
-        categoryEvents: '#3B82F6',
-        categoryDiscussion: '#6366F1',
         categoryMovies: '#EF4444',
-        categoryTrips: '#14B8A6',
-        categoryExams: '#F97316',
+        categoryTrips: '#0EA5E9',
+        categoryEvents: '#8B5CF6',
+        categoryFood: '#F97316',
+        categoryOther: '#64748B',
+
+        // Mascot Colors
+        mascotBody: '#FEFEFE',
+        mascotDark: '#1E293B',
+        mascotCheeks: '#FECACA',
     },
     dark: {
         // Primary Brand Colors
-        primary: '#818CF8',
-        primaryLight: '#A5B4FC',
-        primaryDark: '#6366F1',
+        primary: '#14B8A6',
+        primaryLight: '#2DD4BF',
+        primaryDark: '#0D9488',
 
         // Secondary Colors
-        secondary: '#F472B6',
-        secondaryLight: '#F9A8D4',
-        secondaryDark: '#EC4899',
+        secondary: '#FB923C',
+        secondaryLight: '#FDBA74',
+        secondaryDark: '#F97316',
 
         // Accent Colors
-        accent: '#A78BFA',
-        accentLight: '#C4B5FD',
+        accent: '#38BDF8',
+        accentLight: '#7DD3FC',
 
         // Background Colors
         background: '#0F172A',
@@ -95,8 +100,8 @@ export const CampusLoopColors = {
         warningLight: '#FCD34D',
         error: '#F87171',
         errorLight: '#FCA5A5',
-        info: '#60A5FA',
-        infoLight: '#93C5FD',
+        info: '#38BDF8',
+        infoLight: '#7DD3FC',
 
         // UI Colors
         border: '#334155',
@@ -105,20 +110,24 @@ export const CampusLoopColors = {
         overlay: 'rgba(0, 0, 0, 0.7)',
 
         // Gradient Colors
-        gradientStart: '#6366F1',
-        gradientEnd: '#EC4899',
-        gradientAccent: '#8B5CF6',
+        gradientStart: '#0D9488',
+        gradientEnd: '#0EA5E9',
+        gradientAccent: '#14B8A6',
 
         // Category Colors
-        categoryAssignment: '#FBBF24',
-        categoryCoding: '#A78BFA',
-        categoryActivities: '#F472B6',
+        categoryStudy: '#14B8A6',
+        categoryHelp: '#FBBF24',
         categorySports: '#34D399',
-        categoryEvents: '#60A5FA',
-        categoryDiscussion: '#818CF8',
         categoryMovies: '#F87171',
-        categoryTrips: '#2DD4BF',
-        categoryExams: '#FB923C',
+        categoryTrips: '#38BDF8',
+        categoryEvents: '#A78BFA',
+        categoryFood: '#FB923C',
+        categoryOther: '#94A3B8',
+
+        // Mascot Colors
+        mascotBody: '#F8FAFC',
+        mascotDark: '#1E293B',
+        mascotCheeks: '#FECACA',
     },
 };
 
@@ -169,42 +178,43 @@ export const CampusLoopBorderRadius = {
     lg: 16,
     xl: 20,
     '2xl': 24,
+    '3xl': 32,
     full: 9999,
 };
 
 export const CampusLoopShadows = {
     sm: {
-        shadowColor: '#000',
+        shadowColor: '#0F172A',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.04,
         shadowRadius: 2,
         elevation: 1,
     },
     base: {
-        shadowColor: '#000',
+        shadowColor: '#0F172A',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.06,
         shadowRadius: 4,
         elevation: 2,
     },
     md: {
-        shadowColor: '#000',
+        shadowColor: '#0F172A',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.08,
         shadowRadius: 8,
         elevation: 4,
     },
     lg: {
-        shadowColor: '#000',
+        shadowColor: '#0F172A',
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.12,
         shadowRadius: 16,
         elevation: 8,
     },
     xl: {
-        shadowColor: '#000',
+        shadowColor: '#0F172A',
         shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.16,
         shadowRadius: 24,
         elevation: 12,
     },
@@ -217,25 +227,36 @@ export const CampusLoopAnimations = {
         slow: 350,
         verySlow: 500,
     },
-    easing: {
-        easeIn: 'ease-in',
-        easeOut: 'ease-out',
-        easeInOut: 'ease-in-out',
-        spring: 'spring',
+    spring: {
+        gentle: { damping: 15, stiffness: 100 },
+        bouncy: { damping: 10, stiffness: 150 },
+        snappy: { damping: 20, stiffness: 200 },
     },
 };
 
 export const CampusLoopGradients = {
-    primary: ['#6366F1', '#EC4899'],
-    secondary: ['#8B5CF6', '#EC4899'],
+    primary: ['#0D9488', '#0EA5E9'],
+    secondary: ['#F97316', '#F59E0B'],
     success: ['#10B981', '#34D399'],
-    sunset: ['#F59E0B', '#EF4444'],
-    ocean: ['#3B82F6', '#8B5CF6'],
-    forest: ['#10B981', '#14B8A6'],
+    cool: ['#0EA5E9', '#8B5CF6'],
+    warm: ['#F97316', '#EF4444'],
+    nature: ['#10B981', '#0D9488'],
+    subtle: ['#F8FAFC', '#E2E8F0'],
+};
+
+// Activity Category Configuration
+export const ActivityCategories = {
+    study: { icon: '📚', label: 'Study', color: '#0D9488' },
+    help: { icon: '🤝', label: 'Help', color: '#F59E0B' },
+    sports: { icon: '⚽', label: 'Sports', color: '#10B981' },
+    movies: { icon: '🎬', label: 'Movies', color: '#EF4444' },
+    trips: { icon: '✈️', label: 'Trips', color: '#0EA5E9' },
+    events: { icon: '🎉', label: 'Events', color: '#8B5CF6' },
+    food: { icon: '🍕', label: 'Food', color: '#F97316' },
+    other: { icon: '💡', label: 'Other', color: '#64748B' },
 };
 
 // Helper function to get theme colors based on dark mode
 export const getThemeColors = (isDark: boolean) => {
     return isDark ? CampusLoopColors.dark : CampusLoopColors.light;
 };
-

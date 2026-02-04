@@ -1,6 +1,6 @@
 /**
- * CampusLoop Enhanced Profile Screen
- * Professional profile with stats, cover photo, and achievements
+ * CampusLoop Profile Screen
+ * Clean profile design with campus info and activities
  */
 
 import React from 'react';
@@ -11,26 +11,49 @@ import {
     ScrollView,
     TouchableOpacity,
     Dimensions,
+    StatusBar,
+    Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { useCampusLoopTheme } from '../../context/ThemeContext';
 import { useCampusLoopAuth } from '../../context/AuthContext';
-import { CampusLoopCard } from '../../components/common/Card';
 import { CampusLoopAvatar } from '../../components/common/Avatar';
-import { CampusLoopButton } from '../../components/common/Button';
-import { CampusLoopCategoryChip } from '../../components/common/CategoryChip';
 import {
     CampusLoopSpacing,
     CampusLoopTypography,
     CampusLoopBorderRadius,
     CampusLoopShadows,
 } from '../../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
 interface ProfileScreenProps {
     navigation: any;
 }
+
+interface MenuItemProps {
+    icon: string;
+    iconColor: string;
+    title: string;
+    subtitle?: string;
+    onPress: () => void;
+    colors: any;
+}
+
+const MenuItem: React.FC<MenuItemProps> = ({ icon, iconColor, title, subtitle, onPress, colors }) => (
+    <TouchableOpacity style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={onPress}>
+        <View style={[styles.menuIconContainer, { backgroundColor: iconColor + '15' }]}>
+            <Ionicons name={icon as any} size={22} color={iconColor} />
+        </View>
+        <View style={styles.menuContent}>
+            <Text style={[styles.menuTitle, { color: colors.text }]}>{title}</Text>
+            {subtitle && <Text style={[styles.menuSubtitle, { color: colors.textTertiary }]}>{subtitle}</Text>}
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+    </TouchableOpacity>
+);
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     const { colors, isDark, toggleTheme } = useCampusLoopTheme();
@@ -40,189 +63,206 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
     if (!user) return null;
 
-    const handleLogout = async () => {
-        await logout();
+    const handleLogout = () => {
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to logout?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Logout', style: 'destructive', onPress: logout },
+            ]
+        );
     };
 
-    // Mock stats - in real app, fetch from API
+    // Mock stats
     const stats = {
-        posts: 24,
         activities: 12,
-        connections: 156,
+        created: 5,
+        connections: 48,
     };
 
     return (
-        <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Cover Photo with Gradient */}
-            <View style={styles.coverContainer}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle="light-content" />
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Header */}
                 <LinearGradient
                     colors={[colors.gradientStart, colors.gradientEnd]}
                     start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.coverPhoto}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.header}
                 >
-                    <TouchableOpacity style={styles.settingsButton}>
-                        <Text style={styles.settingsIcon}>⚙️</Text>
+                    {/* Settings Button */}
+                    <TouchableOpacity style={styles.settingsBtn}>
+                        <Ionicons name="settings-outline" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
+
+                    {/* Profile Info */}
+                    <Animated.View entering={FadeIn.duration(500)} style={styles.profileInfo}>
+                        <View style={[styles.avatarWrapper, { borderColor: 'rgba(255,255,255,0.3)' }]}>
+                            <CampusLoopAvatar
+                                name={user.fullName}
+                                size="large"
+                                imageUri={user.profilePicture}
+                            />
+                        </View>
+                        <Text style={styles.userName}>{user.fullName}</Text>
+                        <Text style={styles.userEmail}>{user.email}</Text>
+
+                        {/* Campus Badge */}
+                        <View style={styles.campusBadge}>
+                            <Ionicons name="school-outline" size={14} color="rgba(255,255,255,0.9)" />
+                            <Text style={styles.campusText}>{user.university}</Text>
+                        </View>
+                    </Animated.View>
+
+                    {/* Stats */}
+                    <View style={styles.statsRow}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>{stats.activities}</Text>
+                            <Text style={styles.statLabel}>Joined</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>{stats.created}</Text>
+                            <Text style={styles.statLabel}>Created</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>{stats.connections}</Text>
+                            <Text style={styles.statLabel}>Friends</Text>
+                        </View>
+                    </View>
                 </LinearGradient>
 
-                {/* Profile Picture */}
-                <View style={styles.avatarContainer}>
-                    <View style={[styles.avatarBorder, { backgroundColor: colors.background }]}>
-                        <CampusLoopAvatar
-                            name={user.fullName}
-                            size="large"
-                            imageUri={user.profilePicture}
-                        />
-                    </View>
-                    <TouchableOpacity style={[styles.editAvatarButton, { backgroundColor: colors.primary }]}>
-                        <Text style={styles.editAvatarIcon}>📷</Text>
+                {/* Edit Profile Button */}
+                <View style={styles.editButtonContainer}>
+                    <TouchableOpacity
+                        style={[styles.editButton, { backgroundColor: colors.surface }]}
+                        onPress={() => navigation.navigate('EditProfile')}
+                    >
+                        <Ionicons name="pencil" size={18} color={colors.primary} />
+                        <Text style={[styles.editButtonText, { color: colors.primary }]}>
+                            Edit Profile
+                        </Text>
                     </TouchableOpacity>
                 </View>
-            </View>
 
-            <View style={styles.content}>
-                {/* User Info */}
-                <View style={styles.userInfo}>
-                    <Text style={[styles.name, { color: colors.text }]}>{user.fullName}</Text>
-                    <Text style={[styles.email, { color: colors.textSecondary }]}>{user.email}</Text>
-                </View>
-
-                {/* Stats Cards */}
-                <View style={styles.statsContainer}>
-                    <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-                        <Text style={[styles.statValue, { color: colors.primary }]}>{stats.posts}</Text>
-                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Posts</Text>
-                    </View>
-                    <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-                        <Text style={[styles.statValue, { color: colors.secondary }]}>{stats.activities}</Text>
-                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Activities</Text>
-                    </View>
-                    <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-                        <Text style={[styles.statValue, { color: colors.accent }]}>{stats.connections}</Text>
-                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Connections</Text>
-                    </View>
-                </View>
-
-                {/* Edit Profile Button */}
-                <TouchableOpacity
-                    style={[styles.editProfileButton, { backgroundColor: colors.primary }]}
-                    onPress={() => navigation.navigate('EditProfile')}
+                {/* Academic Info Card */}
+                <Animated.View
+                    entering={FadeInDown.delay(100).duration(400)}
+                    style={styles.section}
                 >
-                    <LinearGradient
-                        colors={[colors.gradientStart, colors.gradientEnd]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.editProfileGradient}
-                    >
-                        <Text style={styles.editProfileText}>✏️ Edit Profile</Text>
-                    </LinearGradient>
-                </TouchableOpacity>
-
-                {/* University Info Card */}
-                <CampusLoopCard style={styles.infoCard}>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>🎓 Academic Info</Text>
-                    <View style={styles.infoRow}>
-                        <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>University</Text>
-                        <Text style={[styles.infoValue, { color: colors.text }]}>{user.university}</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                        🎓 Academic Info
+                    </Text>
+                    <View style={[styles.infoCard, { backgroundColor: colors.surface }]}>
+                        <View style={styles.infoRow}>
+                            <View style={[styles.infoIcon, { backgroundColor: colors.primary + '15' }]}>
+                                <Ionicons name="school" size={18} color={colors.primary} />
+                            </View>
+                            <View style={styles.infoContent}>
+                                <Text style={[styles.infoLabel, { color: colors.textTertiary }]}>Course</Text>
+                                <Text style={[styles.infoValue, { color: colors.text }]}>{user.course}</Text>
+                            </View>
+                        </View>
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                        <View style={styles.infoRow}>
+                            <View style={[styles.infoIcon, { backgroundColor: colors.secondary + '15' }]}>
+                                <Ionicons name="calendar" size={18} color={colors.secondary} />
+                            </View>
+                            <View style={styles.infoContent}>
+                                <Text style={[styles.infoLabel, { color: colors.textTertiary }]}>Semester</Text>
+                                <Text style={[styles.infoValue, { color: colors.text }]}>{user.semester}</Text>
+                            </View>
+                        </View>
                     </View>
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                    <View style={styles.infoRow}>
-                        <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Course</Text>
-                        <Text style={[styles.infoValue, { color: colors.text }]}>{user.course}</Text>
-                    </View>
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                    <View style={styles.infoRow}>
-                        <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Semester</Text>
-                        <Text style={[styles.infoValue, { color: colors.text }]}>{user.semester}</Text>
-                    </View>
-                </CampusLoopCard>
+                </Animated.View>
 
-                {/* Bio Card */}
-                {user.bio && (
-                    <CampusLoopCard style={styles.bioCard}>
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>📝 About Me</Text>
-                        <Text style={[styles.bioText, { color: colors.textSecondary }]}>{user.bio}</Text>
-                    </CampusLoopCard>
-                )}
-
-                {/* Interests Card */}
-                <CampusLoopCard style={styles.interestsCard}>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>💡 Interests</Text>
-                    <View style={styles.interestsContainer}>
-                        {user.interests.map((interest) => (
-                            <CampusLoopCategoryChip
+                {/* Interests */}
+                <Animated.View
+                    entering={FadeInDown.delay(200).duration(400)}
+                    style={styles.section}
+                >
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                        💡 Interests
+                    </Text>
+                    <View style={styles.interestTags}>
+                        {user.interests.map((interest, index) => (
+                            <View
                                 key={interest}
-                                label={interest}
-                                selected
-                                style={styles.interestChip}
-                            />
+                                style={[styles.interestTag, { backgroundColor: colors.primary + '15' }]}
+                            >
+                                <Text style={[styles.interestText, { color: colors.primary }]}>
+                                    {interest}
+                                </Text>
+                            </View>
                         ))}
                     </View>
-                </CampusLoopCard>
+                </Animated.View>
 
-                {/* Achievements Card */}
-                <CampusLoopCard style={styles.achievementsCard}>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>🏆 Achievements</Text>
-                    <View style={styles.achievementsGrid}>
-                        <View style={styles.achievementBadge}>
-                            <Text style={styles.achievementIcon}>🌟</Text>
-                            <Text style={[styles.achievementText, { color: colors.textSecondary }]}>
-                                Early Adopter
-                            </Text>
-                        </View>
-                        <View style={styles.achievementBadge}>
-                            <Text style={styles.achievementIcon}>🎯</Text>
-                            <Text style={[styles.achievementText, { color: colors.textSecondary }]}>
-                                Active Member
-                            </Text>
-                        </View>
-                        <View style={styles.achievementBadge}>
-                            <Text style={styles.achievementIcon}>💬</Text>
-                            <Text style={[styles.achievementText, { color: colors.textSecondary }]}>
-                                Social Butterfly
-                            </Text>
-                        </View>
+                {/* Menu Items */}
+                <Animated.View
+                    entering={FadeInDown.delay(300).duration(400)}
+                    style={styles.section}
+                >
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                        ⚙️ Settings
+                    </Text>
+                    <View style={styles.menuList}>
+                        <MenuItem
+                            icon={isDark ? 'sunny' : 'moon'}
+                            iconColor="#F59E0B"
+                            title={isDark ? 'Light Mode' : 'Dark Mode'}
+                            subtitle="Change app appearance"
+                            onPress={toggleTheme}
+                            colors={colors}
+                        />
+                        <MenuItem
+                            icon="notifications-outline"
+                            iconColor="#0EA5E9"
+                            title="Notifications"
+                            subtitle="Manage your alerts"
+                            onPress={() => navigation.navigate('Notifications')}
+                            colors={colors}
+                        />
+                        <MenuItem
+                            icon="shield-checkmark-outline"
+                            iconColor="#10B981"
+                            title="Privacy"
+                            subtitle="Control your data"
+                            onPress={() => {}}
+                            colors={colors}
+                        />
+                        <MenuItem
+                            icon="help-circle-outline"
+                            iconColor="#8B5CF6"
+                            title="Help & Support"
+                            subtitle="Get assistance"
+                            onPress={() => {}}
+                            colors={colors}
+                        />
                     </View>
-                </CampusLoopCard>
+                </Animated.View>
 
-                {/* Settings Card */}
-                <CampusLoopCard style={styles.settingsCard}>
-                    <TouchableOpacity style={styles.settingRow} onPress={toggleTheme}>
-                        <Text style={[styles.settingText, { color: colors.text }]}>
-                            {isDark ? '☀️' : '🌙'} {isDark ? 'Light Mode' : 'Dark Mode'}
-                        </Text>
-                        <Text style={styles.settingArrow}>›</Text>
-                    </TouchableOpacity>
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                    <TouchableOpacity style={styles.settingRow}>
-                        <Text style={[styles.settingText, { color: colors.text }]}>🔔 Notifications</Text>
-                        <Text style={styles.settingArrow}>›</Text>
-                    </TouchableOpacity>
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                    <TouchableOpacity style={styles.settingRow}>
-                        <Text style={[styles.settingText, { color: colors.text }]}>🔒 Privacy</Text>
-                        <Text style={styles.settingArrow}>›</Text>
-                    </TouchableOpacity>
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                    <TouchableOpacity style={styles.settingRow}>
-                        <Text style={[styles.settingText, { color: colors.text }]}>❓ Help & Support</Text>
-                        <Text style={styles.settingArrow}>›</Text>
-                    </TouchableOpacity>
-                </CampusLoopCard>
-
-                {/* Logout Button */}
-                <CampusLoopButton
-                    title="Logout"
+                {/* Logout */}
+                <TouchableOpacity
+                    style={[styles.logoutButton, { borderColor: colors.error }]}
                     onPress={handleLogout}
-                    variant="outline"
-                    fullWidth
-                    style={styles.logoutButton}
-                />
+                >
+                    <Ionicons name="log-out-outline" size={20} color={colors.error} />
+                    <Text style={[styles.logoutText, { color: colors.error }]}>Logout</Text>
+                </TouchableOpacity>
 
-                <View style={styles.bottomSpacer} />
-            </View>
-        </ScrollView>
+                {/* App Version */}
+                <Text style={[styles.versionText, { color: colors.textTertiary }]}>
+                    CampusLoop v1.0.0
+                </Text>
+
+                <View style={{ height: 100 }} />
+            </ScrollView>
+        </View>
     );
 };
 
@@ -230,118 +270,129 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    coverContainer: {
-        position: 'relative',
+    header: {
+        paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 16 : 60,
+        paddingBottom: CampusLoopSpacing.xl,
+        borderBottomLeftRadius: CampusLoopBorderRadius['3xl'],
+        borderBottomRightRadius: CampusLoopBorderRadius['3xl'],
     },
-    coverPhoto: {
-        width: '100%',
-        height: 200,
-    },
-    settingsButton: {
+    settingsBtn: {
         position: 'absolute',
-        top: 50,
-        right: CampusLoopSpacing.base,
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.3)',
-        justifyContent: 'center',
+        top: StatusBar.currentHeight ? StatusBar.currentHeight + 16 : 60,
+        right: CampusLoopSpacing.xl,
+        zIndex: 10,
+    },
+    profileInfo: {
         alignItems: 'center',
+        paddingHorizontal: CampusLoopSpacing.xl,
     },
-    settingsIcon: {
-        fontSize: 20,
-    },
-    avatarContainer: {
-        position: 'absolute',
-        bottom: -50,
-        alignSelf: 'center',
-    },
-    avatarBorder: {
+    avatarWrapper: {
         padding: 4,
         borderRadius: 60,
-        ...CampusLoopShadows.lg,
+        borderWidth: 3,
+        marginBottom: CampusLoopSpacing.md,
     },
-    editAvatarButton: {
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...CampusLoopShadows.md,
-    },
-    editAvatarIcon: {
-        fontSize: 16,
-    },
-    content: {
-        marginTop: 60,
-        padding: CampusLoopSpacing.base,
-    },
-    userInfo: {
-        alignItems: 'center',
-        marginBottom: CampusLoopSpacing.xl,
-    },
-    name: {
+    userName: {
         fontSize: CampusLoopTypography.fontSize['2xl'],
         fontWeight: CampusLoopTypography.fontWeight.bold,
-        marginBottom: CampusLoopSpacing.xs,
-    },
-    email: {
-        fontSize: CampusLoopTypography.fontSize.base,
-    },
-    statsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: CampusLoopSpacing.xl,
-    },
-    statCard: {
-        flex: 1,
-        marginHorizontal: 4,
-        padding: CampusLoopSpacing.base,
-        borderRadius: CampusLoopBorderRadius.lg,
-        alignItems: 'center',
-        ...CampusLoopShadows.sm,
-    },
-    statValue: {
-        fontSize: CampusLoopTypography.fontSize['2xl'],
-        fontWeight: CampusLoopTypography.fontWeight.bold,
+        color: '#FFFFFF',
         marginBottom: 4,
     },
-    statLabel: {
+    userEmail: {
         fontSize: CampusLoopTypography.fontSize.sm,
+        color: 'rgba(255,255,255,0.8)',
+        marginBottom: CampusLoopSpacing.md,
     },
-    editProfileButton: {
+    campusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: CampusLoopSpacing.md,
+        paddingVertical: CampusLoopSpacing.xs,
+        borderRadius: CampusLoopBorderRadius.full,
+        gap: 6,
+    },
+    campusText: {
+        fontSize: CampusLoopTypography.fontSize.sm,
+        color: '#FFFFFF',
+        fontWeight: CampusLoopTypography.fontWeight.medium,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        marginTop: CampusLoopSpacing.xl,
+        marginHorizontal: CampusLoopSpacing.xl,
+        backgroundColor: 'rgba(255,255,255,0.15)',
         borderRadius: CampusLoopBorderRadius.lg,
-        marginBottom: CampusLoopSpacing.xl,
-        overflow: 'hidden',
+        padding: CampusLoopSpacing.base,
     },
-    editProfileGradient: {
-        paddingVertical: CampusLoopSpacing.md,
+    statItem: {
+        flex: 1,
         alignItems: 'center',
     },
-    editProfileText: {
-        color: '#FFFFFF',
-        fontSize: CampusLoopTypography.fontSize.base,
+    statValue: {
+        fontSize: CampusLoopTypography.fontSize.xl,
         fontWeight: CampusLoopTypography.fontWeight.bold,
+        color: '#FFFFFF',
     },
-    infoCard: {
-        marginBottom: CampusLoopSpacing.base,
+    statLabel: {
+        fontSize: CampusLoopTypography.fontSize.xs,
+        color: 'rgba(255,255,255,0.8)',
+        marginTop: 2,
     },
-    cardTitle: {
+    statDivider: {
+        width: 1,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+    },
+    editButtonContainer: {
+        paddingHorizontal: CampusLoopSpacing.xl,
+        marginTop: -CampusLoopSpacing.lg,
+    },
+    editButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: CampusLoopSpacing.md,
+        borderRadius: CampusLoopBorderRadius.lg,
+        gap: CampusLoopSpacing.sm,
+        ...CampusLoopShadows.md,
+    },
+    editButtonText: {
+        fontSize: CampusLoopTypography.fontSize.base,
+        fontWeight: CampusLoopTypography.fontWeight.semibold,
+    },
+    section: {
+        paddingHorizontal: CampusLoopSpacing.xl,
+        marginTop: CampusLoopSpacing.xl,
+    },
+    sectionTitle: {
         fontSize: CampusLoopTypography.fontSize.lg,
         fontWeight: CampusLoopTypography.fontWeight.bold,
-        marginBottom: CampusLoopSpacing.base,
+        marginBottom: CampusLoopSpacing.md,
+    },
+    infoCard: {
+        borderRadius: CampusLoopBorderRadius.lg,
+        padding: CampusLoopSpacing.base,
+        ...CampusLoopShadows.sm,
     },
     infoRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingVertical: CampusLoopSpacing.sm,
     },
+    infoIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: CampusLoopSpacing.md,
+    },
+    infoContent: {
+        flex: 1,
+    },
     infoLabel: {
-        fontSize: CampusLoopTypography.fontSize.sm,
-        fontWeight: CampusLoopTypography.fontWeight.medium,
+        fontSize: CampusLoopTypography.fontSize.xs,
+        marginBottom: 2,
     },
     infoValue: {
         fontSize: CampusLoopTypography.fontSize.base,
@@ -349,63 +400,71 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 1,
+        marginVertical: CampusLoopSpacing.xs,
     },
-    bioCard: {
-        marginBottom: CampusLoopSpacing.base,
-    },
-    bioText: {
-        fontSize: CampusLoopTypography.fontSize.base,
-        lineHeight: CampusLoopTypography.lineHeight.relaxed * CampusLoopTypography.fontSize.base,
-    },
-    interestsCard: {
-        marginBottom: CampusLoopSpacing.base,
-    },
-    interestsContainer: {
+    interestTags: {
         flexDirection: 'row',
         flexWrap: 'wrap',
+        gap: CampusLoopSpacing.sm,
     },
-    interestChip: {
-        marginBottom: CampusLoopSpacing.sm,
+    interestTag: {
+        paddingHorizontal: CampusLoopSpacing.md,
+        paddingVertical: CampusLoopSpacing.sm,
+        borderRadius: CampusLoopBorderRadius.full,
     },
-    achievementsCard: {
-        marginBottom: CampusLoopSpacing.base,
+    interestText: {
+        fontSize: CampusLoopTypography.fontSize.sm,
+        fontWeight: CampusLoopTypography.fontWeight.medium,
     },
-    achievementsGrid: {
+    menuList: {
+        gap: CampusLoopSpacing.sm,
+    },
+    menuItem: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-    },
-    achievementBadge: {
         alignItems: 'center',
+        padding: CampusLoopSpacing.md,
+        borderRadius: CampusLoopBorderRadius.lg,
+        ...CampusLoopShadows.sm,
     },
-    achievementIcon: {
-        fontSize: 40,
-        marginBottom: CampusLoopSpacing.xs,
-    },
-    achievementText: {
-        fontSize: CampusLoopTypography.fontSize.xs,
-        textAlign: 'center',
-    },
-    settingsCard: {
-        marginBottom: CampusLoopSpacing.base,
-    },
-    settingRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    menuIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
         alignItems: 'center',
-        paddingVertical: CampusLoopSpacing.md,
+        justifyContent: 'center',
+        marginRight: CampusLoopSpacing.md,
     },
-    settingText: {
+    menuContent: {
+        flex: 1,
+    },
+    menuTitle: {
         fontSize: CampusLoopTypography.fontSize.base,
         fontWeight: CampusLoopTypography.fontWeight.medium,
     },
-    settingArrow: {
-        fontSize: 24,
-        color: '#94A3B8',
+    menuSubtitle: {
+        fontSize: CampusLoopTypography.fontSize.xs,
+        marginTop: 2,
     },
     logoutButton: {
-        marginTop: CampusLoopSpacing.base,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: CampusLoopSpacing.xl,
+        marginTop: CampusLoopSpacing.xl,
+        paddingVertical: CampusLoopSpacing.md,
+        borderRadius: CampusLoopBorderRadius.lg,
+        borderWidth: 1.5,
+        gap: CampusLoopSpacing.sm,
     },
-    bottomSpacer: {
-        height: CampusLoopSpacing['2xl'],
+    logoutText: {
+        fontSize: CampusLoopTypography.fontSize.base,
+        fontWeight: CampusLoopTypography.fontWeight.semibold,
+    },
+    versionText: {
+        textAlign: 'center',
+        marginTop: CampusLoopSpacing.xl,
+        fontSize: CampusLoopTypography.fontSize.xs,
     },
 });
+
+export default ProfileScreen;

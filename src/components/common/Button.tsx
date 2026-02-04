@@ -118,7 +118,7 @@ export const CampusLoopButton: React.FC<CampusLoopButtonProps> = ({
             ) : (
                 <>
                     {icon && <>{icon}</>}
-                    <Text style={[getTextStyle(), icon && { marginLeft: CampusLoopSpacing.sm }]}>
+                    <Text style={[getTextStyle(), icon ? { marginLeft: CampusLoopSpacing.sm } : undefined]}>
                         {title}
                     </Text>
                 </>
