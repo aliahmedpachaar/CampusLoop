@@ -41,7 +41,7 @@ const mockNotifications = [
     },
 ];
 
-const NotificationsScreen: React.FC<any> = ({ navigation }) => {
+export const NotificationsScreen: React.FC<any> = ({ navigation }) => {
     const { colors } = useCampusLoopTheme();
 
     const renderItem = ({ item }: { item: any }) => (
@@ -81,6 +81,7 @@ const NotificationsScreen: React.FC<any> = ({ navigation }) => {
         </View>
     );
 };
+
 export default NotificationsScreen;
 
 const styles = StyleSheet.create({

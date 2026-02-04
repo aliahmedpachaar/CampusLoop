@@ -191,7 +191,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
 
             {/* Content */}
             <View style={styles.content}>
-                <Animated.View entering={FadeInUp.delay(300).duration(600)}>
+                <Animated.View entering={FadeInUp.delay(300).duration(600)} style={styles.titleSection}>
+                    <Image
+                        source={require('../../assets/images/logo.png')}
+                        style={styles.logo}
+                        resizeMode="contain"
+                    />
                     <Text style={[styles.title, { color: colors.text }]}>
                         CampusLoop
                     </Text>
@@ -303,10 +308,18 @@ const styles = StyleSheet.create({
         paddingBottom: CampusLoopSpacing['3xl'],
         justifyContent: 'flex-end',
     },
+    titleSection: {
+        alignItems: 'center',
+    },
+    logo: {
+        width: 100,
+        height: 100,
+    },
     title: {
         fontSize: CampusLoopTypography.fontSize['4xl'],
         fontWeight: CampusLoopTypography.fontWeight.bold,
         textAlign: 'center',
+        marginTop: CampusLoopSpacing.md,
         marginBottom: CampusLoopSpacing.md,
     },
     subtitle: {

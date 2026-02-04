@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet, Image } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -143,7 +143,11 @@ export const AppNavigator = () => {
         // Splash screen
         return (
             <View style={[styles.splashContainer, { backgroundColor: colors.background }]}>
-                <Text style={styles.splashEmoji}>🎓</Text>
+                <Image
+                    source={require('../assets/images/logo.png')}
+                    style={styles.splashLogo}
+                    resizeMode="contain"
+                />
                 <Text style={[styles.splashText, { color: colors.text }]}>CampusLoop</Text>
             </View>
         );
@@ -184,13 +188,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    splashEmoji: {
-        fontSize: 64,
-        marginBottom: 16,
+    splashLogo: {
+        width: 120,
+        height: 120,
     },
     splashText: {
         fontSize: 28,
         fontWeight: '700',
+        marginTop: 16,
     },
 });
 

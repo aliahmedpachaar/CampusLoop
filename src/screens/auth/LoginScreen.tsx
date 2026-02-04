@@ -15,6 +15,7 @@ import {
     TouchableOpacity,
     Dimensions,
     StatusBar,
+    Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -144,7 +145,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                         entering={FadeInDown.delay(100).duration(600)}
                         style={styles.header}
                     >
-                        <Text style={styles.logoEmoji}>🎓</Text>
+                        <Image
+                            source={require('../../assets/images/logo.png')}
+                            style={styles.logo}
+                            resizeMode="contain"
+                        />
                         <Text style={[styles.appName, { color: colors.primary }]}>
                             CampusLoop
                         </Text>
@@ -341,13 +346,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: CampusLoopSpacing.xl,
     },
-    logoEmoji: {
-        fontSize: 56,
-        marginBottom: CampusLoopSpacing.md,
+    logo: {
+        width: 80,
+        height: 80,
     },
     appName: {
         fontSize: CampusLoopTypography.fontSize['2xl'],
         fontWeight: CampusLoopTypography.fontWeight.bold,
+        marginTop: CampusLoopSpacing.md,
         marginBottom: CampusLoopSpacing.md,
     },
     welcomeText: {

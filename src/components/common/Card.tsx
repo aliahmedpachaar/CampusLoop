@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { useCampusLoopTheme } from '../../context/ThemeContext';
 import {
     CampusLoopSpacing,
@@ -16,7 +16,7 @@ interface CampusLoopCardProps {
     children: React.ReactNode;
     onPress?: () => void;
     padding?: 'none' | 'sm' | 'md' | 'lg';
-    style?: ViewStyle;
+    style?: StyleProp<ViewStyle>;
 }
 
 export const CampusLoopCard: React.FC<CampusLoopCardProps> = ({
