@@ -11,14 +11,14 @@
 const getBaseUrl = () => {
     // Development
     if (__DEV__) {
+        // Automatically detected IP for physical device
+        return 'http://10.100.101.52:5001';
+
         // For iOS simulator
-        return 'http://localhost:5001';
+        // return 'http://localhost:5001';
 
-        // For Android emulator, uncomment:
+        // For Android emulator
         // return 'http://10.0.2.2:5001';
-
-        // For physical device, use your computer's IP:
-        // return 'http://192.168.1.100:5001';
     }
 
     // Production - replace with your deployed backend URL

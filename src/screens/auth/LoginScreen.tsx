@@ -1,6 +1,6 @@
 /**
  * CampusLoop Login Screen
- * Clean and simple login design
+ * Redesigned with Green Theme and Animations
  */
 
 import React, { useState, useEffect } from 'react';
@@ -26,6 +26,7 @@ import Animated, {
     withSequence,
     FadeInDown,
     FadeInUp,
+    ZoomIn,
 } from 'react-native-reanimated';
 import { useCampusLoopTheme } from '../../context/ThemeContext';
 import { useCampusLoopAuth } from '../../context/AuthContext';
@@ -60,7 +61,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     const formScale = useSharedValue(0.95);
 
     useEffect(() => {
-        formScale.value = withSpring(1, { damping: 15, stiffness: 100 });
+        formScale.value = withSpring(1, { damping: 12, stiffness: 90 });
     }, []);
 
     const validate = (): boolean => {
@@ -119,9 +120,33 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         transform: [{ scale: formScale.value }],
     }));
 
+    // Green Theme Colors
+    const greenTheme = {
+        primary: '#10B981', // Emerald 500
+        dark: '#059669',    // Emerald 600
+        light: '#34D399',   // Emerald 400
+        gradientStart: '#10B981',
+        gradientEnd: '#059669',
+        background: '#ECFDF5', // Emerald 50
+    };
+
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <StatusBar barStyle="dark-content" />
+        <View style={styles.container}>
+            <StatusBar barStyle="light-content" />
+
+            {/* Green Gradient Background */}
+            <LinearGradient
+                colors={[greenTheme.gradientStart, greenTheme.gradientEnd]}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            />
+
+            {/* Background Pattern/Design (Optional circles) */}
+            <View style={styles.patternContainer}>
+                <View style={[styles.circle, { top: -50, right: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.1)' }]} />
+                <View style={[styles.circle, { bottom: 100, left: -50, width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+            </View>
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -137,182 +162,203 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                         style={styles.backButton}
                         onPress={() => navigation.goBack()}
                     >
-                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
 
                     {/* Header */}
                     <Animated.View
-                        entering={FadeInDown.delay(100).duration(600)}
+                        entering={FadeInDown.delay(100).duration(800).springify()}
                         style={styles.header}
                     >
-                        <Image
-                            source={require('../../assets/images/logo.png')}
-                            style={styles.logo}
-                            resizeMode="contain"
-                        />
-                        <Text style={[styles.appName, { color: colors.primary }]}>
+                        <Animated.View entering={ZoomIn.delay(200).duration(500)}>
+                            <View style={styles.logoContainer}>
+                                <Image
+                                    source={require('../../assets/images/logo.png')}
+                                    style={styles.logo}
+                                    resizeMode="contain"
+                                />
+                            </View>
+                        </Animated.View>
+
+                        <Text style={[styles.appName, { color: '#FFFFFF' }]}>
                             CampusLoop
                         </Text>
-                        <Text style={[styles.welcomeText, { color: colors.text }]}>
+                        <Text style={[styles.welcomeText, { color: '#E0F2F1' }]}>
                             Welcome back!
                         </Text>
-                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                        <Text style={[styles.subtitle, { color: '#D1FAE5' }]}>
                             Sign in to continue connecting with your campus
                         </Text>
                     </Animated.View>
 
                     {/* Form Card */}
                     <Animated.View
-                        entering={FadeInUp.delay(200).duration(600)}
+                        entering={FadeInUp.delay(300).duration(800).springify()}
                         style={[
                             styles.formCard,
-                            { backgroundColor: colors.surface },
+                            { backgroundColor: '#FFFFFF' },
                             shakeStyle,
                             formAnimatedStyle,
                         ]}
                     >
                         <View style={styles.form}>
                             {/* Email Input */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.inputLabel, { color: colors.text }]}>
-                                    Email
-                                </Text>
-                                <View style={[
-                                    styles.inputContainer,
-                                    {
-                                        backgroundColor: colors.background,
-                                        borderColor: errors.email ? colors.error : colors.border,
-                                    }
-                                ]}>
-                                    <Ionicons
-                                        name="mail-outline"
-                                        size={20}
-                                        color={colors.textTertiary}
-                                        style={styles.inputIcon}
-                                    />
-                                    <CampusLoopInput
-                                        placeholder="your.email@university.edu"
-                                        value={email}
-                                        onChangeText={setEmail}
-                                        keyboardType="email-address"
-                                        autoCapitalize="none"
-                                        style={styles.input}
-                                        containerStyle={styles.inputWrapper}
-                                    />
-                                </View>
-                                {errors.email ? (
-                                    <Text style={[styles.errorText, { color: colors.error }]}>
-                                        {errors.email}
+                            <Animated.View entering={FadeInUp.delay(400).duration(600)}>
+                                <View style={styles.inputGroup}>
+                                    <Text style={[styles.inputLabel, { color: '#374151' }]}>
+                                        Email
                                     </Text>
-                                ) : null}
-                            </View>
+                                    <View style={[
+                                        styles.inputContainer,
+                                        {
+                                            backgroundColor: '#F9FAFB',
+                                            borderColor: errors.email ? colors.error : '#E5E7EB',
+                                        }
+                                    ]}>
+                                        <Ionicons
+                                            name="mail-outline"
+                                            size={20}
+                                            color="#9CA3AF"
+                                            style={styles.inputIcon}
+                                        />
+                                        <CampusLoopInput
+                                            placeholder="your.email@university.edu"
+                                            value={email}
+                                            onChangeText={setEmail}
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                            style={styles.input}
+                                            containerStyle={styles.inputWrapper}
+                                            placeholderTextColor="#9CA3AF"
+                                        />
+                                    </View>
+                                    {errors.email ? (
+                                        <Text style={[styles.errorText, { color: colors.error }]}>
+                                            {errors.email}
+                                        </Text>
+                                    ) : null}
+                                </View>
+                            </Animated.View>
 
                             {/* Password Input */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.inputLabel, { color: colors.text }]}>
-                                    Password
-                                </Text>
-                                <View style={[
-                                    styles.inputContainer,
-                                    {
-                                        backgroundColor: colors.background,
-                                        borderColor: errors.password ? colors.error : colors.border,
-                                    }
-                                ]}>
-                                    <Ionicons
-                                        name="lock-closed-outline"
-                                        size={20}
-                                        color={colors.textTertiary}
-                                        style={styles.inputIcon}
-                                    />
-                                    <CampusLoopInput
-                                        placeholder="Enter your password"
-                                        value={password}
-                                        onChangeText={setPassword}
-                                        secureTextEntry={!showPassword}
-                                        autoComplete="off"
-                                        autoCorrect={false}
-                                        style={styles.input}
-                                        containerStyle={styles.inputWrapper}
-                                    />
-                                    <TouchableOpacity
-                                        onPress={() => setShowPassword(!showPassword)}
-                                        style={styles.eyeButton}
-                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                    >
-                                        <Ionicons
-                                            name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                                            size={22}
-                                            color={colors.textTertiary}
-                                        />
-                                    </TouchableOpacity>
-                                </View>
-                                {errors.password ? (
-                                    <Text style={[styles.errorText, { color: colors.error }]}>
-                                        {errors.password}
+                            <Animated.View entering={FadeInUp.delay(500).duration(600)}>
+                                <View style={styles.inputGroup}>
+                                    <Text style={[styles.inputLabel, { color: '#374151' }]}>
+                                        Password
                                     </Text>
-                                ) : null}
-                            </View>
+                                    <View style={[
+                                        styles.inputContainer,
+                                        {
+                                            backgroundColor: '#F9FAFB',
+                                            borderColor: errors.password ? colors.error : '#E5E7EB',
+                                        }
+                                    ]}>
+                                        <Ionicons
+                                            name="lock-closed-outline"
+                                            size={20}
+                                            color="#9CA3AF"
+                                            style={styles.inputIcon}
+                                        />
+                                        <CampusLoopInput
+                                            placeholder="Enter your password"
+                                            value={password}
+                                            onChangeText={setPassword}
+                                            secureTextEntry={!showPassword}
+                                            autoComplete="off"
+                                            autoCorrect={false}
+                                            style={styles.input}
+                                            containerStyle={styles.inputWrapper}
+                                            placeholderTextColor="#9CA3AF"
+                                        />
+                                        <TouchableOpacity
+                                            onPress={() => setShowPassword(!showPassword)}
+                                            style={styles.eyeButton}
+                                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                        >
+                                            <Ionicons
+                                                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                                                size={22}
+                                                color="#9CA3AF"
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                    {errors.password ? (
+                                        <Text style={[styles.errorText, { color: colors.error }]}>
+                                            {errors.password}
+                                        </Text>
+                                    ) : null}
+                                </View>
+                            </Animated.View>
 
                             {/* Forgot Password */}
-                            <TouchableOpacity
-                                style={styles.forgotPassword}
-                                onPress={() => navigation.navigate('ForgotPassword')}
-                            >
-                                <Text style={[styles.forgotText, { color: colors.primary }]}>
-                                    Forgot Password?
-                                </Text>
-                            </TouchableOpacity>
+                            <Animated.View entering={FadeInUp.delay(600).duration(600)}>
+                                <TouchableOpacity
+                                    style={styles.forgotPassword}
+                                    onPress={() => navigation.navigate('ForgotPassword')}
+                                >
+                                    <Text style={[styles.forgotText, { color: greenTheme.primary }]}>
+                                        Forgot Password?
+                                    </Text>
+                                </TouchableOpacity>
+                            </Animated.View>
 
                             {/* Login Button */}
-                            <TouchableOpacity
-                                style={[styles.loginButton, { opacity: loading ? 0.7 : 1 }]}
-                                onPress={handleLogin}
-                                disabled={loading}
-                                activeOpacity={0.8}
-                            >
-                                <LinearGradient
-                                    colors={[colors.gradientStart, colors.gradientEnd]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    style={styles.loginGradient}
+                            <Animated.View entering={FadeInUp.delay(700).duration(600)}>
+                                <TouchableOpacity
+                                    style={[styles.loginButton, { opacity: loading ? 0.7 : 1 }]}
+                                    onPress={handleLogin}
+                                    disabled={loading}
+                                    activeOpacity={0.8}
                                 >
-                                    <Text style={styles.loginButtonText}>
-                                        {loading ? 'Signing in...' : 'Sign In'}
-                                    </Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                    <LinearGradient
+                                        colors={[greenTheme.gradientStart, greenTheme.gradientEnd]}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={styles.loginGradient}
+                                    >
+                                        <Text style={styles.loginButtonText}>
+                                            {loading ? 'Signing in...' : 'Sign In'}
+                                        </Text>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            </Animated.View>
                         </View>
                     </Animated.View>
 
                     {/* Divider */}
-                    <View style={styles.dividerContainer}>
-                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                        <Text style={[styles.dividerText, { color: colors.textTertiary }]}>
+                    <Animated.View
+                        entering={FadeInUp.delay(800).duration(600)}
+                        style={styles.dividerContainer}
+                    >
+                        <View style={[styles.divider, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
+                        <Text style={[styles.dividerText, { color: '#E0F2F1' }]}>
                             or
                         </Text>
-                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                    </View>
+                        <View style={[styles.divider, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
+                    </Animated.View>
 
                     {/* Sign Up Link */}
-                    <View style={styles.signupContainer}>
-                        <Text style={[styles.signupText, { color: colors.textSecondary }]}>
+                    <Animated.View
+                        entering={FadeInUp.delay(900).duration(600)}
+                        style={styles.signupContainer}
+                    >
+                        <Text style={[styles.signupText, { color: '#E0F2F1' }]}>
                             Don't have an account?{' '}
                         </Text>
                         <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                            <Text style={[styles.signupLink, { color: colors.primary }]}>
+                            <Text style={[styles.signupLink, { color: '#FFFFFF' }]}>
                                 Create Account
                             </Text>
                         </TouchableOpacity>
-                    </View>
+                    </Animated.View>
 
                     {/* Demo Credentials */}
                     <Animated.View
-                        entering={FadeInUp.delay(400).duration(400)}
-                        style={[styles.demoCard, { backgroundColor: colors.primary + '10' }]}
+                        entering={FadeInUp.delay(1000).duration(600)}
+                        style={[styles.demoCard, { backgroundColor: 'rgba(255,255,255,0.15)' }]}
                     >
-                        <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
-                        <Text style={[styles.demoText, { color: colors.primary }]}>
+                        <Ionicons name="information-circle-outline" size={18} color="#FFFFFF" />
+                        <Text style={[styles.demoText, { color: '#FFFFFF' }]}>
                             Demo: demo@university.edu / password123
                         </Text>
                     </Animated.View>
@@ -325,6 +371,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    patternContainer: {
+        ...StyleSheet.absoluteFillObject,
+        overflow: 'hidden',
+    },
+    circle: {
+        position: 'absolute',
     },
     keyboardView: {
         flex: 1,
@@ -339,24 +392,37 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: 'rgba(0,0,0,0.05)',
+        backgroundColor: 'rgba(255,255,255,0.2)',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: CampusLoopSpacing.xl,
+        marginBottom: CampusLoopSpacing.lg,
     },
     header: {
         alignItems: 'center',
         marginBottom: CampusLoopSpacing.xl,
     },
+    logoContainer: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: 5,
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+    },
     logo: {
-        width: 80,
-        height: 80,
+        width: 70,
+        height: 70,
     },
     appName: {
-        fontSize: CampusLoopTypography.fontSize['2xl'],
+        fontSize: CampusLoopTypography.fontSize['3xl'],
         fontWeight: CampusLoopTypography.fontWeight.bold,
         marginTop: CampusLoopSpacing.md,
-        marginBottom: CampusLoopSpacing.md,
+        marginBottom: CampusLoopSpacing.xs,
+        textShadowColor: 'rgba(0,0,0,0.1)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
     },
     welcomeText: {
         fontSize: CampusLoopTypography.fontSize.xl,
@@ -366,11 +432,15 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: CampusLoopTypography.fontSize.base,
         textAlign: 'center',
+        opacity: 0.9,
     },
     formCard: {
         borderRadius: CampusLoopBorderRadius['2xl'],
         padding: CampusLoopSpacing.xl,
         ...CampusLoopShadows.lg,
+        shadowColor: '#065F46', // Dark emerald shadow
+        shadowOpacity: 0.15,
+        elevation: 8,
     },
     form: {
         gap: CampusLoopSpacing.lg,
@@ -381,12 +451,13 @@ const styles = StyleSheet.create({
     inputLabel: {
         fontSize: CampusLoopTypography.fontSize.sm,
         fontWeight: CampusLoopTypography.fontWeight.semibold,
+        marginLeft: 4,
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         borderRadius: CampusLoopBorderRadius.lg,
-        borderWidth: 1.5,
+        borderWidth: 1,
         paddingHorizontal: CampusLoopSpacing.base,
     },
     inputIcon: {
@@ -401,13 +472,15 @@ const styles = StyleSheet.create({
     input: {
         flex: 1,
         paddingVertical: CampusLoopSpacing.base,
+        color: '#1F2937',
     },
     eyeButton: {
         padding: CampusLoopSpacing.xs,
     },
     errorText: {
         fontSize: CampusLoopTypography.fontSize.xs,
-        marginTop: 2,
+        marginTop: 4,
+        marginLeft: 4,
     },
     forgotPassword: {
         alignSelf: 'flex-end',
@@ -421,21 +494,28 @@ const styles = StyleSheet.create({
         borderRadius: CampusLoopBorderRadius.lg,
         overflow: 'hidden',
         marginTop: CampusLoopSpacing.sm,
+        shadowColor: '#10B981',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
     loginGradient: {
-        paddingVertical: CampusLoopSpacing.base,
+        paddingVertical: CampusLoopSpacing.lg,
         alignItems: 'center',
         justifyContent: 'center',
     },
     loginButtonText: {
         color: '#FFFFFF',
         fontSize: CampusLoopTypography.fontSize.lg,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
+        fontWeight: CampusLoopTypography.fontWeight.bold,
+        letterSpacing: 0.5,
     },
     dividerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         marginVertical: CampusLoopSpacing.xl,
+        paddingHorizontal: CampusLoopSpacing.lg,
     },
     divider: {
         flex: 1,
@@ -444,6 +524,7 @@ const styles = StyleSheet.create({
     dividerText: {
         marginHorizontal: CampusLoopSpacing.base,
         fontSize: CampusLoopTypography.fontSize.sm,
+        fontWeight: '500',
     },
     signupContainer: {
         flexDirection: 'row',
@@ -455,7 +536,8 @@ const styles = StyleSheet.create({
     },
     signupLink: {
         fontSize: CampusLoopTypography.fontSize.base,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
+        fontWeight: CampusLoopTypography.fontWeight.bold,
+        textDecorationLine: 'underline',
     },
     demoCard: {
         flexDirection: 'row',
@@ -463,8 +545,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: CampusLoopSpacing.sm,
         marginTop: CampusLoopSpacing.xl,
-        padding: CampusLoopSpacing.base,
-        borderRadius: CampusLoopBorderRadius.lg,
+        padding: CampusLoopSpacing.sm,
+        paddingHorizontal: CampusLoopSpacing.lg,
+        borderRadius: CampusLoopBorderRadius.full,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
     },
     demoText: {
         fontSize: CampusLoopTypography.fontSize.sm,
