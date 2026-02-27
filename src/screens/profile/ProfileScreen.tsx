@@ -57,7 +57,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, iconColor, title, subtitle, o
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     const { colors, isDark, toggleTheme } = useCampusLoopTheme();
-    const { state: authState, logout } = useCampusLoopAuth();
+    const { state: authState, logout, deleteAccount } = useCampusLoopAuth();
 
     const user = authState.user;
 
@@ -70,6 +70,27 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Logout', style: 'destructive', onPress: logout },
+            ]
+        );
+    };
+
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            'Delete Account',
+            'This will permanently delete your account. You will not be able to sign in with this email again. This action cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteAccount();
+                        } catch (e: any) {
+                            Alert.alert('Error', e.message || 'Could not delete account. Please try again.');
+                        }
+                    },
+                },
             ]
         );
     };
@@ -253,6 +274,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 >
                     <Ionicons name="log-out-outline" size={20} color={colors.error} />
                     <Text style={[styles.logoutText, { color: colors.error }]}>Logout</Text>
+                </TouchableOpacity>
+
+                {/* Delete Account */}
+                <TouchableOpacity
+                    style={[styles.logoutButton, { borderColor: '#9ca3af', marginTop: 12 }]}
+                    onPress={handleDeleteAccount}
+                >
+                    <Ionicons name="trash-outline" size={20} color="#9ca3af" />
+                    <Text style={[styles.logoutText, { color: '#9ca3af' }]}>Delete Account</Text>
                 </TouchableOpacity>
 
                 {/* App Version */}

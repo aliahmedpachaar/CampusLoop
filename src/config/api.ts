@@ -1,61 +1,59 @@
 /**
  * CampusLoop API Configuration
- * Central configuration for backend connection
  */
 
-// Change this to your backend URL
-// For local development on iOS simulator: use localhost
-// For local development on Android emulator: use 10.0.2.2
-// For physical device: use your computer's IP address (e.g., 192.168.x.x)
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-const getBaseUrl = () => {
-    // Development
+const getBaseUrl = (): string => {
     if (__DEV__) {
-        // Automatically detected IP for physical device
-        return 'http://10.100.101.52:5001';
-
-        // For iOS simulator
-        // return 'http://localhost:5001';
-
-        // For Android emulator
-        // return 'http://10.0.2.2:5001';
+        if (Platform.OS === 'web') return 'http://localhost:5001';
+        if (Platform.OS === 'android') return 'http://10.0.2.2:5001';
+        // iOS: extract the Mac's IP from Expo's Metro host so physical devices work.
+        // On simulator hostUri is "localhost:8081"; on physical device it's "192.168.x.x:8081".
+        const metroHost = Constants.expoConfig?.hostUri?.split(':')[0] ?? 'localhost';
+        return `http://${metroHost}:5001`;
     }
-
-    // Production - replace with your deployed backend URL
-    return 'https://api.campusloop.com';
+    return 'https://api.campusloop.com'; // TODO: replace with real API URL
 };
 
 export const API_CONFIG = {
     BASE_URL: getBaseUrl(),
+    TIMEOUT: 15000,
     ENDPOINTS: {
         // Auth
-        SIGNUP: '/api/auth/signup',
-        LOGIN: '/api/auth/login',
-        ME: '/api/auth/me',
-        FORGOT_PASSWORD: '/api/auth/forgot-password',
+        SIGNUP:           '/api/auth/signup',
+        VERIFY_OTP:       '/api/auth/verify-otp',
+        RESEND_OTP:       '/api/auth/resend-otp',
+        COMPLETE_PROFILE: '/api/auth/complete-profile',
+        LOGIN:            '/api/auth/login',
+        ME:               '/api/auth/me',
+        GOOGLE_AUTH:      '/api/auth/google',
+        FORGOT_PASSWORD:  '/api/auth/forgot-password',
+        RESET_PASSWORD:   '/api/auth/reset-password',
+        DELETE_ACCOUNT:   '/api/auth/account',
 
         // Activities
-        ACTIVITIES: '/api/activities',
-        MY_ACTIVITIES: '/api/activities/my',
-        JOIN_ACTIVITY: (id: string) => `/api/activities/${id}/join`,
-        LEAVE_ACTIVITY: (id: string) => `/api/activities/${id}/leave`,
+        ACTIVITIES:       '/api/activities',
+        MY_ACTIVITIES:    '/api/activities/my',
+        JOIN_ACTIVITY:    (id: string) => `/api/activities/${id}/join`,
+        LEAVE_ACTIVITY:   (id: string) => `/api/activities/${id}/leave`,
 
         // Users
-        UPDATE_PROFILE: '/api/users/profile',
-        UPDATE_AVATAR: '/api/users/avatar',
-        CHANGE_PASSWORD: '/api/users/password',
-        GET_USER: (id: string) => `/api/users/${id}`,
+        UPDATE_PROFILE:   '/api/users/profile',
+        UPDATE_AVATAR:    '/api/users/avatar',
+        CHANGE_PASSWORD:  '/api/users/password',
+        GET_USER:         (id: string) => `/api/users/${id}`,
 
         // Messages
-        GET_MESSAGES: (activityId: string) => `/api/messages/${activityId}`,
-        SEND_MESSAGE: (activityId: string) => `/api/messages/${activityId}`,
+        GET_MESSAGES:     (id: string) => `/api/messages/${id}`,
+        SEND_MESSAGE:     (id: string) => `/api/messages/${id}`,
 
         // Notifications
-        NOTIFICATIONS: '/api/notifications',
-        MARK_READ: (id: string) => `/api/notifications/${id}/read`,
-        MARK_ALL_READ: '/api/notifications/read-all',
+        NOTIFICATIONS:    '/api/notifications',
+        MARK_READ:        (id: string) => `/api/notifications/${id}/read`,
+        MARK_ALL_READ:    '/api/notifications/read-all',
     },
-    TIMEOUT: 10000, // 10 seconds
 };
 
 export default API_CONFIG;

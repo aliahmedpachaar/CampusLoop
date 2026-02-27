@@ -52,5 +52,8 @@ yarn-error.log
 # Temporary files created by Metro
 .metro-health-check*
 
+# Expo
+.expo/
+
 # testing
 /coverage

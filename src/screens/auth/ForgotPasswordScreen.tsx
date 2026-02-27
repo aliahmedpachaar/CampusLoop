@@ -1,193 +1,173 @@
 /**
- * CampusLoop Forgot Password Screen
- * Password reset functionality
+ * CampusLoop - Forgot Password Screen
+ * Requires email + date of birth to match → sends OTP reset code
  */
 
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StatusBar,
+    View, Text, StyleSheet, TouchableOpacity, TextInput,
+    Alert, Platform, StatusBar, ActivityIndicator,
+    KeyboardAvoidingView, ScrollView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useCampusLoopTheme } from '../../context/ThemeContext';
-import { CampusLoopInput } from '../../components/common/Input';
-import { CampusLoopValidation } from '../../utils/validation';
-import {
-    CampusLoopSpacing,
-    CampusLoopTypography,
-    CampusLoopBorderRadius,
-    CampusLoopShadows,
-} from '../../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useCampusLoopAuth } from '../../context/AuthContext';
 
-interface ForgotPasswordScreenProps {
-    navigation: any;
-}
+interface Props { navigation: any }
 
-export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation }) => {
-    const { colors } = useCampusLoopTheme();
-    const [email, setEmail] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [sent, setSent] = useState(false);
-    const [error, setError] = useState('');
+export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
+    const { forgotPassword } = useCampusLoopAuth();
 
-    const handleResetPassword = async () => {
-        if (!CampusLoopValidation.isValidEmail(email)) {
-            setError('Please enter a valid email address');
-            return;
+    const [email,      setEmail]      = useState('');
+    const [dobDisplay, setDobDisplay] = useState('');   // DD/MM/YYYY
+    const [dob,        setDob]        = useState('');   // YYYY-MM-DD for backend
+    const [loading,    setLoading]    = useState(false);
+    const [sent,       setSent]       = useState(false);
+    const [errors,     setErrors]     = useState<Record<string, string>>({});
+
+    // DOB auto-format (same as SignupScreen)
+    const handleDobChange = (text: string) => {
+        const digits = text.replace(/\D/g, '').slice(0, 8);
+        let formatted = digits;
+        if (digits.length > 4) {
+            formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+        } else if (digits.length > 2) {
+            formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
         }
-
-        setLoading(true);
-        setError('');
-
-        // Simulate API call
-        setTimeout(() => {
-            setLoading(false);
-            setSent(true);
-        }, 1500);
+        setDobDisplay(formatted);
+        setErrors(p => ({ ...p, dob: '' }));
+        if (digits.length === 8) {
+            setDob(`${digits.slice(4)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`);
+        } else {
+            setDob('');
+        }
     };
 
-    if (sent) {
-        return (
-            <View style={[styles.container, { backgroundColor: colors.background }]}>
-                <StatusBar barStyle="dark-content" />
-                <View style={styles.successContainer}>
-                    <View style={[styles.successIcon, { backgroundColor: colors.success + '20' }]}>
-                        <Ionicons name="mail" size={48} color={colors.success} />
-                    </View>
-                    <Text style={[styles.successTitle, { color: colors.text }]}>
-                        Check your email
-                    </Text>
-                    <Text style={[styles.successText, { color: colors.textSecondary }]}>
-                        We've sent password reset instructions to {email}
-                    </Text>
-                    <TouchableOpacity
-                        style={[styles.backToLoginButton, { backgroundColor: colors.primary }]}
-                        onPress={() => navigation.navigate('Login')}
-                    >
-                        <Text style={styles.backToLoginText}>Back to Login</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        );
-    }
+    const validate = () => {
+        const e: Record<string, string> = {};
+        if (!email.trim())                    e.email = 'Email is required';
+        else if (!/^\S+@\S+\.\S+$/.test(email)) e.email = 'Enter a valid email address';
+        if (!dob) e.dob = 'Date of birth is required (DD/MM/YYYY)';
+        setErrors(e);
+        return Object.keys(e).length === 0;
+    };
+
+    const handleSend = async () => {
+        if (!validate()) return;
+        setLoading(true);
+        try {
+            await forgotPassword(email.trim().toLowerCase(), dob);
+            setSent(true);
+        } catch (e: any) {
+            Alert.alert('Error', e.message || 'Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <StatusBar barStyle="dark-content" />
+        <View style={styles.root}>
+            <StatusBar barStyle="light-content" />
+            <LinearGradient colors={['#059669', '#10B981']} style={styles.header}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                    <Ionicons name="arrow-back" size={22} color="#fff" />
+                </TouchableOpacity>
+            </LinearGradient>
 
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.keyboardView}
-            >
-                <ScrollView
-                    contentContainerStyle={styles.scrollContent}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={false}
-                >
-                    {/* Back Button */}
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={colors.text} />
-                    </TouchableOpacity>
+            <KeyboardAvoidingView style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}>
+                <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
 
-                    {/* Header */}
-                    <Animated.View
-                        entering={FadeInDown.delay(100).duration(600)}
-                        style={styles.header}
-                    >
-                        <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
-                            <Ionicons name="lock-closed" size={32} color={colors.primary} />
-                        </View>
-                        <Text style={[styles.title, { color: colors.text }]}>
-                            Forgot Password?
-                        </Text>
-                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                            No worries! Enter your email and we'll send you reset instructions.
-                        </Text>
-                    </Animated.View>
-
-                    {/* Form */}
-                    <Animated.View
-                        entering={FadeInDown.delay(200).duration(600)}
-                        style={[styles.formCard, { backgroundColor: colors.surface }]}
-                    >
-                        <View style={styles.inputGroup}>
-                            <Text style={[styles.inputLabel, { color: colors.text }]}>
-                                Email Address
-                            </Text>
-                            <View style={[
-                                styles.inputContainer,
-                                {
-                                    backgroundColor: colors.background,
-                                    borderColor: error ? colors.error : colors.border,
-                                }
-                            ]}>
-                                <Ionicons
-                                    name="mail-outline"
-                                    size={20}
-                                    color={colors.textTertiary}
-                                    style={styles.inputIcon}
-                                />
-                                <CampusLoopInput
-                                    placeholder="your.email@university.edu"
-                                    value={email}
-                                    onChangeText={(text) => {
-                                        setEmail(text);
-                                        setError('');
-                                    }}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    containerStyle={styles.inputWrapper}
-                                />
+                    {sent ? (
+                        <Animated.View entering={FadeInDown.duration(500)} style={{ alignItems: 'center' }}>
+                            <View style={styles.iconCircle}>
+                                <Text style={{ fontSize: 48 }}>✅</Text>
                             </View>
-                            {error ? (
-                                <Text style={[styles.errorText, { color: colors.error }]}>
-                                    {error}
-                                </Text>
-                            ) : null}
-                        </View>
-
-                        {/* Reset Button */}
-                        <TouchableOpacity
-                            style={[styles.resetButton, { opacity: loading ? 0.7 : 1 }]}
-                            onPress={handleResetPassword}
-                            disabled={loading}
-                        >
-                            <LinearGradient
-                                colors={[colors.gradientStart, colors.gradientEnd]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={styles.resetGradient}
-                            >
-                                <Text style={styles.resetButtonText}>
-                                    {loading ? 'Sending...' : 'Reset Password'}
-                                </Text>
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    </Animated.View>
-
-                    {/* Back to Login */}
-                    <View style={styles.loginContainer}>
-                        <Text style={[styles.loginText, { color: colors.textSecondary }]}>
-                            Remember your password?{' '}
-                        </Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                            <Text style={[styles.loginLink, { color: colors.primary }]}>
-                                Sign In
+                            <Text style={styles.title}>Code Sent!</Text>
+                            <Text style={styles.subtitle}>
+                                A password reset code has been sent to{'\n'}
+                                <Text style={styles.highlight}>{email}</Text>
                             </Text>
-                        </TouchableOpacity>
-                    </View>
+                            <TouchableOpacity
+                                style={styles.primaryBtn}
+                                onPress={() => navigation.navigate('ResetPassword', { email: email.trim().toLowerCase() })}
+                            >
+                                <Text style={styles.primaryBtnText}>Enter Reset Code</Text>
+                                <Ionicons name="arrow-forward" size={18} color="#fff" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.secondaryBtn} onPress={() => navigation.navigate('Login')}>
+                                <Text style={styles.secondaryBtnText}>Back to Sign In</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.spamNote}>
+                                Check your spam folder if you don't see it.
+                            </Text>
+                        </Animated.View>
+                    ) : (
+                        <Animated.View entering={FadeInDown.duration(500)} style={{ alignItems: 'center', width: '100%' }}>
+                            <View style={styles.iconCircle}>
+                                <Text style={{ fontSize: 48 }}>🔑</Text>
+                            </View>
+                            <Text style={styles.title}>Forgot Password?</Text>
+                            <Text style={styles.subtitle}>
+                                Enter your email and date of birth to verify your identity. We'll send you a reset code.
+                            </Text>
+
+                            {/* Email */}
+                            <View style={[styles.fieldGroup, { width: '100%' }]}>
+                                <Text style={styles.label}>Email Address</Text>
+                                <View style={[styles.inputRow, errors.email ? styles.inputError : null]}>
+                                    <Ionicons name="mail-outline" size={18} color="#9ca3af" style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="your@email.com"
+                                        placeholderTextColor="#d1d5db"
+                                        value={email}
+                                        onChangeText={v => { setEmail(v); setErrors(p => ({ ...p, email: '' })); }}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        autoCorrect={false}
+                                        returnKeyType="next"
+                                    />
+                                </View>
+                                {!!errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+                            </View>
+
+                            {/* Date of Birth */}
+                            <View style={[styles.fieldGroup, { width: '100%' }]}>
+                                <Text style={styles.label}>Date of Birth</Text>
+                                <View style={[styles.inputRow, errors.dob ? styles.inputError : null]}>
+                                    <Ionicons name="calendar-outline" size={18} color="#9ca3af" style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="DD/MM/YYYY"
+                                        placeholderTextColor="#d1d5db"
+                                        value={dobDisplay}
+                                        onChangeText={handleDobChange}
+                                        keyboardType="number-pad"
+                                        returnKeyType="done"
+                                        onSubmitEditing={handleSend}
+                                    />
+                                </View>
+                                {!!errors.dob && <Text style={styles.errorText}>{errors.dob}</Text>}
+                                <Text style={styles.fieldHint}>Must match the date you used when signing up</Text>
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.primaryBtn, loading && styles.btnDisabled]}
+                                onPress={handleSend}
+                                disabled={loading}
+                            >
+                                {loading
+                                    ? <ActivityIndicator color="#fff" />
+                                    : <Text style={styles.primaryBtnText}>Send Reset Code</Text>}
+                            </TouchableOpacity>
+
+                            <TouchableOpacity onPress={() => navigation.goBack()}>
+                                <Text style={styles.backLink}>← Back to Sign In</Text>
+                            </TouchableOpacity>
+                        </Animated.View>
+                    )}
                 </ScrollView>
             </KeyboardAvoidingView>
         </View>
@@ -195,144 +175,28 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    keyboardView: {
-        flex: 1,
-    },
-    scrollContent: {
-        flexGrow: 1,
-        paddingHorizontal: CampusLoopSpacing.xl,
-        paddingTop: Platform.OS === 'ios' ? 60 : 40,
-        paddingBottom: CampusLoopSpacing['2xl'],
-    },
-    backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: 'rgba(0,0,0,0.05)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: CampusLoopSpacing.xl,
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: CampusLoopSpacing.xl,
-    },
-    iconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: CampusLoopSpacing.lg,
-    },
-    title: {
-        fontSize: CampusLoopTypography.fontSize['2xl'],
-        fontWeight: CampusLoopTypography.fontWeight.bold,
-        marginBottom: CampusLoopSpacing.sm,
-    },
-    subtitle: {
-        fontSize: CampusLoopTypography.fontSize.base,
-        textAlign: 'center',
-        lineHeight: 22,
-    },
-    formCard: {
-        borderRadius: CampusLoopBorderRadius['2xl'],
-        padding: CampusLoopSpacing.xl,
-        ...CampusLoopShadows.lg,
-    },
-    inputGroup: {
-        marginBottom: CampusLoopSpacing.lg,
-    },
-    inputLabel: {
-        fontSize: CampusLoopTypography.fontSize.sm,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
-        marginBottom: CampusLoopSpacing.sm,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderRadius: CampusLoopBorderRadius.lg,
-        borderWidth: 1.5,
-        paddingHorizontal: CampusLoopSpacing.base,
-    },
-    inputIcon: {
-        marginRight: CampusLoopSpacing.sm,
-    },
-    inputWrapper: {
-        flex: 1,
-        marginBottom: 0,
-        borderWidth: 0,
-        backgroundColor: 'transparent',
-    },
-    errorText: {
-        fontSize: CampusLoopTypography.fontSize.xs,
-        marginTop: CampusLoopSpacing.xs,
-    },
-    resetButton: {
-        borderRadius: CampusLoopBorderRadius.lg,
-        overflow: 'hidden',
-    },
-    resetGradient: {
-        paddingVertical: CampusLoopSpacing.base,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    resetButtonText: {
-        color: '#FFFFFF',
-        fontSize: CampusLoopTypography.fontSize.lg,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
-    },
-    loginContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: CampusLoopSpacing.xl,
-    },
-    loginText: {
-        fontSize: CampusLoopTypography.fontSize.base,
-    },
-    loginLink: {
-        fontSize: CampusLoopTypography.fontSize.base,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
-    },
-    successContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: CampusLoopSpacing.xl,
-    },
-    successIcon: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: CampusLoopSpacing.xl,
-    },
-    successTitle: {
-        fontSize: CampusLoopTypography.fontSize['2xl'],
-        fontWeight: CampusLoopTypography.fontWeight.bold,
-        marginBottom: CampusLoopSpacing.md,
-    },
-    successText: {
-        fontSize: CampusLoopTypography.fontSize.base,
-        textAlign: 'center',
-        lineHeight: 22,
-        marginBottom: CampusLoopSpacing.xl,
-    },
-    backToLoginButton: {
-        paddingVertical: CampusLoopSpacing.base,
-        paddingHorizontal: CampusLoopSpacing['2xl'],
-        borderRadius: CampusLoopBorderRadius.lg,
-    },
-    backToLoginText: {
-        color: '#FFFFFF',
-        fontSize: CampusLoopTypography.fontSize.base,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
-    },
+    root:            { flex: 1, backgroundColor: '#f9fafb' },
+    header:          { paddingTop: Platform.OS === 'ios' ? 56 : 40, paddingBottom: 30, paddingHorizontal: 20 },
+    backBtn:         { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+    body:            { flexGrow: 1, alignItems: 'center', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 },
+    iconCircle:      { width: 100, height: 100, borderRadius: 50, backgroundColor: '#ecfdf5', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+    title:           { fontSize: 26, fontWeight: '800', color: '#111827', textAlign: 'center', marginBottom: 10 },
+    subtitle:        { fontSize: 15, color: '#6b7280', textAlign: 'center', lineHeight: 22, marginBottom: 28, paddingHorizontal: 10 },
+    highlight:       { color: '#10B981', fontWeight: '700' },
+    fieldGroup:      { marginBottom: 16 },
+    label:           { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
+    inputRow:        { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, height: 52 },
+    inputError:      { borderColor: '#ef4444' },
+    input:           { flex: 1, fontSize: 15, color: '#111827' },
+    errorText:       { fontSize: 12, color: '#ef4444', marginTop: 4 },
+    fieldHint:       { fontSize: 12, color: '#9ca3af', marginTop: 6 },
+    primaryBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#10B981', borderRadius: 12, height: 52, width: '100%', marginTop: 8 },
+    btnDisabled:     { opacity: 0.6 },
+    primaryBtnText:  { color: '#fff', fontSize: 16, fontWeight: '700' },
+    secondaryBtn:    { height: 48, alignItems: 'center', justifyContent: 'center', width: '100%', marginTop: 12 },
+    secondaryBtnText:{ fontSize: 15, color: '#6b7280', fontWeight: '600' },
+    backLink:        { marginTop: 24, fontSize: 14, color: '#10B981', fontWeight: '600' },
+    spamNote:        { textAlign: 'center', fontSize: 12, color: '#9ca3af', marginTop: 20, lineHeight: 18 },
 });
 
 export default ForgotPasswordScreen;

@@ -1,31 +1,15 @@
 /**
- * CampusLoop University and Course Data
- * Predefined options for dropdowns and autocomplete
+ * CampusLoop - University & Course Data
+ * University is fixed to City University Malaysia.
  */
 
-export const CampusLoopUniversities = [
-    'Harvard University',
-    'Stanford University',
-    'Massachusetts Institute of Technology (MIT)',
-    'University of Cambridge',
-    'University of Oxford',
-    'University of California, Berkeley',
-    'Princeton University',
-    'Yale University',
-    'Columbia University',
-    'University of Chicago',
-    'Imperial College London',
-    'ETH Zurich',
-    'University of Toronto',
-    'National University of Singapore',
-    'Tsinghua University',
-    'Peking University',
-    'University of Melbourne',
-    'University of Sydney',
-    'McGill University',
-    'University of British Columbia',
-    // Add more universities as needed
-];
+export const CITY_UNIVERSITY = 'City University Malaysia';
+
+export const CampusLoopCampuses = [
+    'Petaling Jaya Campus',
+    'Cyberjaya Campus',
+    'Johor Campus',
+] as const;
 
 export const CampusLoopCourses = [
     'Computer Science',
@@ -35,35 +19,25 @@ export const CampusLoopCourses = [
     'Artificial Intelligence',
     'Cybersecurity',
     'Business Administration',
-    'Economics',
-    'Finance',
-    'Accounting',
+    'Accounting & Finance',
     'Marketing',
+    'Human Resource Management',
     'Mechanical Engineering',
-    'Electrical Engineering',
+    'Electrical & Electronic Engineering',
     'Civil Engineering',
-    'Chemical Engineering',
-    'Biomedical Engineering',
+    'Architecture',
     'Medicine',
     'Nursing',
     'Pharmacy',
     'Psychology',
-    'Sociology',
-    'Political Science',
-    'International Relations',
     'Law',
-    'Architecture',
+    'Mass Communication',
     'Graphic Design',
-    'Fine Arts',
-    'Mathematics',
-    'Physics',
-    'Chemistry',
-    'Biology',
-    'Environmental Science',
+    'Interior Design',
     'Education',
-    'English Literature',
-    'History',
-    'Philosophy',
+    'English Language Studies',
+    'Foundation in Arts',
+    'Foundation in Science',
 ];
 
 export const CampusLoopSemesters = [
@@ -79,50 +53,16 @@ export const CampusLoopSemesters = [
     'Year 2',
     'Year 3',
     'Year 4',
-    'Year 5',
-    'Graduate Student',
-    'PhD Candidate',
+    'Graduate',
 ];
 
 export const CampusLoopInterests = [
-    'Coding',
-    'Web Development',
-    'Mobile Development',
-    'Machine Learning',
-    'Data Analysis',
-    'Gaming',
-    'Sports',
-    'Football',
-    'Basketball',
-    'Tennis',
-    'Swimming',
-    'Gym & Fitness',
-    'Music',
-    'Photography',
-    'Videography',
-    'Reading',
-    'Writing',
-    'Art & Design',
-    'Cooking',
-    'Travel',
-    'Hiking',
-    'Cycling',
-    'Volunteering',
-    'Entrepreneurship',
-    'Public Speaking',
-    'Debate',
-    'Theater',
-    'Dance',
-    'Yoga',
-    'Meditation',
-    'Chess',
-    'Board Games',
-    'Anime & Manga',
-    'Movies & TV',
-    'Podcasts',
+    'Coding', 'Web Development', 'Mobile Development', 'Machine Learning',
+    'Gaming', 'Sports', 'Football', 'Basketball', 'Badminton', 'Gym & Fitness',
+    'Music', 'Photography', 'Reading', 'Writing', 'Art & Design',
+    'Cooking', 'Travel', 'Hiking', 'Volunteering', 'Entrepreneurship',
+    'Public Speaking', 'Theater', 'Dance', 'Yoga', 'Chess',
+    'Anime & Manga', 'Movies & TV', 'Podcasts',
 ];
 
-export type CampusLoopUniversity = typeof CampusLoopUniversities[number];
-export type CampusLoopCourse = typeof CampusLoopCourses[number];
-export type CampusLoopSemester = typeof CampusLoopSemesters[number];
-export type CampusLoopInterest = typeof CampusLoopInterests[number];
+export type CampusLoopCampus = typeof CampusLoopCampuses[number];

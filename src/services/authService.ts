@@ -1,153 +1,146 @@
 /**
- * CampusLoop Authentication Service
- * Connects to the backend API for authentication
+ * CampusLoop Authentication Service - v2
+ * email + password login, OTP for signup verification, DOB for password reset
  */
 
-import { CampusLoopUser, CampusLoopSignupData } from '../types/user';
+import { CampusLoopUser } from '../types/user';
 import { apiService } from './api';
 import { API_CONFIG } from '../config/api';
 import { CampusLoopStorage } from '../utils/storage';
 
 export interface CampusLoopAuthResponse {
-    user: CampusLoopUser;
-    token: string;
+    user:         CampusLoopUser;
+    token:        string;
+    needsProfile?: boolean;
 }
 
-// Transform backend user to app user format
-const transformUser = (backendUser: any): CampusLoopUser => {
-    return {
-        id: backendUser.id || backendUser._id,
-        email: backendUser.email,
-        fullName: backendUser.fullName,
-        university: backendUser.university,
-        campus: backendUser.campus,
-        course: backendUser.course,
-        semester: backendUser.semester,
-        interests: backendUser.interests || [],
-        profilePicture: backendUser.avatar,
-        bio: backendUser.bio || '',
-        createdAt: new Date(backendUser.createdAt),
-        locationEnabled: false,
-    };
-};
+const transformUser = (u: any): CampusLoopUser => ({
+    id:              u.id || u._id,
+    email:           u.email,
+    fullName:        u.fullName || '',
+    university:      u.university || 'City University Malaysia',
+    campus:          u.campus    || '',
+    course:          u.course    || '',
+    semester:        u.semester  || '',
+    interests:       u.interests || [],
+    profilePicture:  u.avatar    || '',
+    bio:             u.bio       || '',
+    emailVerified:   u.emailVerified   ?? false,
+    profileComplete: u.profileComplete ?? false,
+    authProvider:    u.authProvider    || 'email',
+    createdAt:       new Date(u.createdAt),
+    locationEnabled: false,
+});
 
 export const CampusLoopAuthService = {
-    /**
-     * Login with email and password
-     */
+
+    // ── Sign Up ──────────────────────────────────────────────────────────────
+    // name + email + dateOfBirth + password → OTP sent to email
+
+    signup: async (fullName: string, email: string, dateOfBirth: string, password: string): Promise<void> => {
+        const response = await apiService.post(
+            API_CONFIG.ENDPOINTS.SIGNUP, { fullName, email, dateOfBirth, password }
+        );
+        if (!response.success) throw new Error(response.message || 'Sign up failed');
+    },
+
+    // ── Verify OTP (after signup) ─────────────────────────────────────────────
+
+    verifyOTP: async (email: string, otp: string): Promise<CampusLoopAuthResponse> => {
+        const response = await apiService.post<{ user: any; token: string; needsProfile: boolean }>(
+            API_CONFIG.ENDPOINTS.VERIFY_OTP, { email, otp }
+        );
+        if (!response.success || !response.data) throw new Error(response.message || 'Verification failed');
+        const { user, token, needsProfile } = response.data;
+        await CampusLoopStorage.saveAuthToken(token);
+        return { user: transformUser(user), token, needsProfile };
+    },
+
+    resendOTP: async (email: string): Promise<void> => {
+        const response = await apiService.post(API_CONFIG.ENDPOINTS.RESEND_OTP, { email });
+        if (!response.success) throw new Error(response.message || 'Failed to resend code');
+    },
+
+    // ── Complete Profile (campus + course after first sign-up) ───────────────
+
+    completeProfile: async (data: { campus: string; course?: string }): Promise<CampusLoopAuthResponse> => {
+        const response = await apiService.post<{ user: any; token: string }>(
+            API_CONFIG.ENDPOINTS.COMPLETE_PROFILE, data
+        );
+        if (!response.success || !response.data) throw new Error(response.message || 'Profile setup failed');
+        const { user, token } = response.data;
+        await CampusLoopStorage.saveAuthToken(token);
+        return { user: transformUser(user), token };
+    },
+
+    // ── Sign In ───────────────────────────────────────────────────────────────
+
     login: async (email: string, password: string): Promise<CampusLoopAuthResponse> => {
-        try {
-            const response = await apiService.post<{ user: any; token: string }>(
-                API_CONFIG.ENDPOINTS.LOGIN,
-                { email, password }
-            );
-
-            if (!response.success || !response.data) {
-                throw new Error(response.message || 'Login failed');
-            }
-
-            const { user, token } = response.data;
-
-            // Save token to storage
-            await CampusLoopStorage.saveAuthToken(token);
-
-            return {
-                user: transformUser(user),
-                token,
-            };
-        } catch (error: any) {
-            console.error('Login error:', error);
-            throw new Error(error.message || 'Login failed. Please try again.');
-        }
+        const response = await apiService.post<{ user: any; token: string; needsProfile: boolean }>(
+            API_CONFIG.ENDPOINTS.LOGIN, { email, password }
+        );
+        if (!response.success || !response.data) throw new Error(response.message || 'Sign in failed');
+        const { user, token, needsProfile } = response.data;
+        await CampusLoopStorage.saveAuthToken(token);
+        return { user: transformUser(user), token, needsProfile };
     },
 
-    /**
-     * Sign up new user
-     */
-    signup: async (data: CampusLoopSignupData): Promise<CampusLoopAuthResponse> => {
-        try {
-            const response = await apiService.post<{ user: any; token: string }>(
-                API_CONFIG.ENDPOINTS.SIGNUP,
-                {
-                    email: data.email,
-                    password: data.password,
-                    fullName: data.fullName,
-                    university: data.university,
-                    campus: data.campus || '',
-                    course: data.course || '',
-                    semester: data.semester || '',
-                    interests: data.interests || [],
-                }
-            );
+    // ── Google auth ────────────────────────────────────────────────────────────
 
-            if (!response.success || !response.data) {
-                throw new Error(response.message || 'Signup failed');
-            }
-
-            const { user, token } = response.data;
-
-            // Save token to storage
-            await CampusLoopStorage.saveAuthToken(token);
-
-            return {
-                user: transformUser(user),
-                token,
-            };
-        } catch (error: any) {
-            console.error('Signup error:', error);
-            throw new Error(error.message || 'Signup failed. Please try again.');
-        }
+    googleAuth: async (params: {
+        email: string; googleId: string; fullName: string; avatar?: string;
+    }): Promise<CampusLoopAuthResponse> => {
+        const response = await apiService.post<{ user: any; token: string; needsProfile: boolean }>(
+            API_CONFIG.ENDPOINTS.GOOGLE_AUTH, params
+        );
+        if (!response.success || !response.data) throw new Error(response.message || 'Google sign-in failed');
+        const { user, token, needsProfile } = response.data;
+        await CampusLoopStorage.saveAuthToken(token);
+        return { user: transformUser(user), token, needsProfile };
     },
 
-    /**
-     * Verify token and get current user
-     */
-    verifyToken: async (token: string): Promise<CampusLoopUser | null> => {
+    // ── Forgot Password (requires email + date of birth to match) ─────────────
+
+    forgotPassword: async (email: string, dateOfBirth: string): Promise<void> => {
+        const response = await apiService.post(
+            API_CONFIG.ENDPOINTS.FORGOT_PASSWORD, { email, dateOfBirth }
+        );
+        if (!response.success) throw new Error(response.message || 'Could not send reset code');
+    },
+
+    // ── Reset Password ────────────────────────────────────────────────────────
+
+    resetPassword: async (email: string, otp: string, newPassword: string): Promise<void> => {
+        const response = await apiService.post(
+            API_CONFIG.ENDPOINTS.RESET_PASSWORD, { email, otp, newPassword }
+        );
+        if (!response.success) throw new Error(response.message || 'Password reset failed');
+    },
+
+    // ── Delete Account ────────────────────────────────────────────────────────
+
+    deleteAccount: async (): Promise<void> => {
+        const response = await apiService.delete(API_CONFIG.ENDPOINTS.DELETE_ACCOUNT);
+        if (!response.success) throw new Error(response.message || 'Could not delete account');
+    },
+
+    // ── Session ────────────────────────────────────────────────────────────────
+
+    verifyToken: async (_token: string): Promise<CampusLoopUser | null> => {
         try {
-            // Token is already stored, apiService will use it
             const response = await apiService.get<any>(API_CONFIG.ENDPOINTS.ME);
-
-            if (!response.success || !response.data) {
-                return null;
-            }
-
+            if (!response.success || !response.data) return null;
             return transformUser(response.data);
-        } catch (error) {
-            console.error('Token verification error:', error);
+        } catch {
             return null;
         }
     },
 
-    /**
-     * Logout user
-     */
     logout: async (): Promise<void> => {
         await CampusLoopStorage.clearAll();
     },
 
-    /**
-     * Forgot password
-     */
-    forgotPassword: async (email: string): Promise<boolean> => {
-        try {
-            const response = await apiService.post(
-                API_CONFIG.ENDPOINTS.FORGOT_PASSWORD,
-                { email }
-            );
-            return response.success;
-        } catch (error) {
-            console.error('Forgot password error:', error);
-            return false;
-        }
-    },
-
-    /**
-     * Get stored auth token
-     */
-    getStoredToken: async (): Promise<string | null> => {
-        return await CampusLoopStorage.getAuthToken();
-    },
+    getStoredToken: async (): Promise<string | null> => CampusLoopStorage.getAuthToken(),
 };
 
 export default CampusLoopAuthService;
-

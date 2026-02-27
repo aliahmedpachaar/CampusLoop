@@ -21,7 +21,7 @@ import Animated, {
     FadeInDown,
     FadeInUp,
 } from 'react-native-reanimated';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { PlatformDatePicker } from '../../components/common/PlatformDatePicker';
 import { useCampusLoopTheme } from '../../context/ThemeContext';
 import { useCampusLoopAuth } from '../../context/AuthContext';
 import { CampusLoopActivityService } from '../../services/activityService';
@@ -375,7 +375,7 @@ export const CreateActivityScreen: React.FC<CreateActivityScreenProps> = ({ navi
             </View>
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
                 style={styles.keyboardView}
             >
                 <ScrollView
@@ -388,25 +388,21 @@ export const CreateActivityScreen: React.FC<CreateActivityScreenProps> = ({ navi
             </KeyboardAvoidingView>
 
             {/* Date Picker */}
-            {showDatePicker && (
-                <DateTimePicker
-                    value={scheduledDate || new Date()}
-                    mode="date"
-                    display="default"
-                    onChange={handleDateChange}
-                    minimumDate={new Date()}
-                />
-            )}
+            <PlatformDatePicker
+                show={showDatePicker}
+                mode="date"
+                value={scheduledDate || new Date()}
+                minimumDate={new Date()}
+                onChange={handleDateChange}
+            />
 
             {/* Time Picker */}
-            {showTimePicker && (
-                <DateTimePicker
-                    value={scheduledDate || new Date()}
-                    mode="time"
-                    display="default"
-                    onChange={handleTimeChange}
-                />
-            )}
+            <PlatformDatePicker
+                show={showTimePicker}
+                mode="time"
+                value={scheduledDate || new Date()}
+                onChange={handleTimeChange}
+            />
         </View>
     );
 };
@@ -419,7 +415,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingTop: Platform.OS === 'ios' ? 60 : StatusBar.currentHeight! + 16,
+        paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight ?? 0) + 16,
         paddingHorizontal: CampusLoopSpacing.base,
         paddingBottom: CampusLoopSpacing.base,
         borderBottomWidth: 1,

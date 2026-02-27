@@ -9,11 +9,14 @@ export interface CampusLoopUser {
     fullName: string;
     university: string;
     campus?: string;
-    course: string;
-    semester: string;
+    course?: string;
+    semester?: string;
     interests: string[];
     profilePicture?: string;
     bio?: string;
+    emailVerified?: boolean;
+    profileComplete?: boolean;
+    authProvider?: 'email' | 'google' | 'apple';
     createdAt: Date;
     locationEnabled: boolean;
     locationRadius?: 'building' | 'campus' | 'nearby';
@@ -48,16 +51,17 @@ export interface CampusLoopAuthState {
     token: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
+    needsProfileSetup: boolean;
 }
 
 export interface CampusLoopSignupData {
     email: string;
     password: string;
     fullName: string;
-    university: string;
+    university?: string;
     campus?: string;
-    course: string;
-    semester: string;
-    interests: string[];
+    course?: string;
+    semester?: string;
+    interests?: string[];
     profilePicture?: string;
 }

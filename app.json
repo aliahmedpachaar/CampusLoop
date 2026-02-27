@@ -2,6 +2,7 @@
   "expo": {
     "name": "CampusLoop",
     "slug": "campusloop",
+    "scheme": "campusloop",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/images/logo.png",
@@ -28,10 +29,14 @@
     },
     "web": {
       "favicon": "./src/assets/images/logo.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "output": "single",
+      "name": "CampusLoop",
+      "lang": "en"
     },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      "expo-web-browser"
     ]
   }
 }

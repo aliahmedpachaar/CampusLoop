@@ -24,20 +24,28 @@ const seedUser = async () => {
         const userExists = await User.findOne({ email: demoEmail });
 
         if (userExists) {
-            console.log('Demo user already exists');
+            // Ensure demo user is verified even after new auth system
+            if (!userExists.emailVerified) {
+                userExists.emailVerified = true;
+                userExists.isVerified    = true;
+                await userExists.save({ validateBeforeSave: false });
+                console.log('Demo user updated: email marked as verified');
+            } else {
+                console.log('Demo user already exists and is verified');
+            }
         } else {
-            // Create demo user
-            const user = await User.create({
-                email: demoEmail,
-                password: 'password123',
-                fullName: 'Demo Student',
-                university: 'CampusLoop University',
-                campus: 'Main Campus',
-                course: 'Computer Science',
-                semester: '4th Semester',
-                interests: ['Coding', 'Design', 'Music'],
-                bio: 'This is a demo account for testing features.',
-                isVerified: true
+            await User.create({
+                email:         demoEmail,
+                password:      'password123',
+                fullName:      'Demo Student',
+                university:    'City University Malaysia',
+                campus:        'Petaling Jaya Campus',
+                course:        'Computer Science',
+                semester:      'Semester 4',
+                interests:     ['Coding', 'Design', 'Music'],
+                bio:           'Demo account for testing.',
+                isVerified:    true,
+                emailVerified: true,
             });
             console.log('Demo user created successfully');
         }

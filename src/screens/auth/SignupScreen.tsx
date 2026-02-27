@@ -1,469 +1,353 @@
 /**
- * CampusLoop Signup Screen
- * Multi-step user registration with clean design
+ * CampusLoop - Sign Up Screen
+ * Collects: full name + email + date of birth + password → OTP sent → VerifyOTP
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    KeyboardAvoidingView,
-    Platform,
-    Alert,
-    TouchableOpacity,
-    Dimensions,
-    StatusBar,
+    View, Text, StyleSheet, TouchableOpacity, TextInput,
+    Alert, Platform, StatusBar, ActivityIndicator,
+    KeyboardAvoidingView, ScrollView, Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { useCampusLoopTheme } from '../../context/ThemeContext';
-import { useCampusLoopAuth } from '../../context/AuthContext';
-import { CampusLoopButton } from '../../components/common/Button';
-import { CampusLoopInput } from '../../components/common/Input';
-import { CampusLoopValidation } from '../../utils/validation';
-import { CampusLoopUniversities, CampusLoopCourses, CampusLoopSemesters, CampusLoopInterests } from '../../constants/universities';
-import { CampusLoopSpacing, CampusLoopTypography, CampusLoopBorderRadius, CampusLoopShadows } from '../../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useCampusLoopAuth } from '../../context/AuthContext';
 
-const { width } = Dimensions.get('window');
+WebBrowser.maybeCompleteAuthSession();
 
-interface SignupScreenProps {
-    navigation: any;
-}
+interface Props { navigation: any }
 
-// Campus options for PJ/CJ
-const campusOptions = ['PJ Campus', 'CJ Campus', 'Main Campus', 'City Campus', 'Online'];
+const isValidEmail = (v: string) => /^\S+@\S+\.\S+$/.test(v);
 
-export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
-    const { colors } = useCampusLoopTheme();
-    const { signup } = useCampusLoopAuth();
+export const SignupScreen: React.FC<Props> = ({ navigation }) => {
+    const { signup, googleAuth } = useCampusLoopAuth();
 
-    const [step, setStep] = useState(1);
-    const [loading, setLoading] = useState(false);
+    const [fullName,    setFullName]    = useState('');
+    const [email,       setEmail]       = useState('');
+    const [dobDisplay,  setDobDisplay]  = useState('');   // shown as DD/MM/YYYY
+    const [dob,         setDob]         = useState('');   // stored as YYYY-MM-DD
+    const [password,    setPassword]    = useState('');
+    const [confirmPass, setConfirmPass] = useState('');
+    const [showPass,    setShowPass]    = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [loading,     setLoading]     = useState(false);
+    const [googleLoad,  setGoogleLoad]  = useState(false);
+    const [errors,      setErrors]      = useState<Record<string, string>>({});
 
-    // Form data
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [fullName, setFullName] = useState('');
-    const [university, setUniversity] = useState('');
-    const [campus, setCampus] = useState('');
-    const [course, setCourse] = useState('');
-    const [semester, setSemester] = useState('');
-    const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+    const emailRef   = useRef<TextInput>(null);
+    const dobRef     = useRef<TextInput>(null);
+    const passRef    = useRef<TextInput>(null);
+    const confirmRef = useRef<TextInput>(null);
 
-    const [errors, setErrors] = useState<any>({});
+    // ── Google OAuth ──────────────────────────────────────────────────────────
+    const [, googleResponse, promptAsync] = Google.useAuthRequest({
+        webClientId:     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID     || 'not-configured',
+        iosClientId:     process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID     || 'not-configured',
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 'not-configured',
+    });
 
-    const totalSteps = 4;
-
-    const validateStep1 = (): boolean => {
-        const newErrors: any = {};
-        let isValid = true;
-
-        if (!CampusLoopValidation.isValidEmail(email)) {
-            newErrors.email = 'Please enter a valid email';
-            isValid = false;
+    React.useEffect(() => {
+        if (googleResponse?.type === 'success') {
+            handleGoogleSuccess(googleResponse.authentication?.accessToken);
         }
+    }, [googleResponse]);
 
-        const passwordError = CampusLoopValidation.getPasswordStrengthMessage(password);
-        if (passwordError) {
-            newErrors.password = passwordError;
-            isValid = false;
-        }
-
-        if (password !== confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
-            isValid = false;
-        }
-
-        setErrors(newErrors);
-        return isValid;
-    };
-
-    const validateStep2 = (): boolean => {
-        const newErrors: any = {};
-        let isValid = true;
-
-        if (!fullName.trim()) {
-            newErrors.fullName = 'Please enter your name';
-            isValid = false;
-        }
-
-        if (!university) {
-            newErrors.university = 'Please select your university';
-            isValid = false;
-        }
-
-        setErrors(newErrors);
-        return isValid;
-    };
-
-    const validateStep3 = (): boolean => {
-        const newErrors: any = {};
-        let isValid = true;
-
-        if (!course) {
-            newErrors.course = 'Please select your program';
-            isValid = false;
-        }
-
-        if (!semester) {
-            newErrors.semester = 'Please select your semester';
-            isValid = false;
-        }
-
-        setErrors(newErrors);
-        return isValid;
-    };
-
-    const handleNext = () => {
-        if (step === 1 && validateStep1()) {
-            setStep(2);
-            setErrors({});
-        } else if (step === 2 && validateStep2()) {
-            setStep(3);
-            setErrors({});
-        } else if (step === 3 && validateStep3()) {
-            setStep(4);
-            setErrors({});
+    const handleGoogleSuccess = async (accessToken?: string | null) => {
+        if (!accessToken) return;
+        setGoogleLoad(true);
+        try {
+            const info = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            }).then(r => r.json());
+            await googleAuth({ email: info.email, googleId: info.id, fullName: info.name, avatar: info.picture });
+            // AuthContext dispatches NEEDS_PROFILE_SETUP or SET_USER → AppNavigator handles routing
+        } catch (e: any) {
+            Alert.alert('Google Sign-In Failed', e.message || 'Please try again.');
+        } finally {
+            setGoogleLoad(false);
         }
     };
 
-    const handleBack = () => {
-        if (step > 1) {
-            setStep(step - 1);
-            setErrors({});
-        } else {
-            navigation.goBack();
-        }
-    };
-
-    const handleSignup = async () => {
-        if (selectedInterests.length < 1) {
-            Alert.alert('Select Interests', 'Please select at least one interest to help us personalize your experience');
+    const handleGooglePress = () => {
+        const hasCredentials =
+            (Platform.OS === 'ios'     && !!process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID) ||
+            (Platform.OS === 'android' && !!process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID) ||
+            (Platform.OS === 'web'     && !!process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID);
+        if (!hasCredentials) {
+            Alert.alert('Google Sign-In Not Configured', 'Use email sign-up below.');
             return;
         }
+        promptAsync();
+    };
 
+    // ── Apple Sign-In ─────────────────────────────────────────────────────────
+    const handleApple = async () => {
+        try {
+            const cred = await AppleAuthentication.signInAsync({
+                requestedScopes: [
+                    AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                    AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                ],
+            });
+            if (!cred.email) {
+                Alert.alert('Apple Sign-In', 'Could not get email. Please use email sign-up.');
+                return;
+            }
+            const name = [cred.fullName?.givenName, cred.fullName?.familyName].filter(Boolean).join(' ') || 'Apple User';
+            setGoogleLoad(true);
+            await googleAuth({ email: cred.email, googleId: cred.user, fullName: name });
+        } catch (e: any) {
+            if (e.code !== 'ERR_REQUEST_CANCELED') Alert.alert('Apple Sign-In Failed', e.message);
+        } finally {
+            setGoogleLoad(false);
+        }
+    };
+
+    // ── DOB auto-format (DD/MM/YYYY) ──────────────────────────────────────────
+    const handleDobChange = (text: string) => {
+        const digits = text.replace(/\D/g, '').slice(0, 8);
+        let formatted = digits;
+        if (digits.length > 4) {
+            formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+        } else if (digits.length > 2) {
+            formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+        }
+        setDobDisplay(formatted);
+        setErrors(p => ({ ...p, dob: '' }));
+        if (digits.length === 8) {
+            setDob(`${digits.slice(4)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`);
+        } else {
+            setDob('');
+        }
+    };
+
+    // ── Validation ─────────────────────────────────────────────────────────────
+    const validate = () => {
+        const e: Record<string, string> = {};
+        if (!fullName.trim())          e.fullName    = 'Full name is required';
+        if (!email.trim())             e.email       = 'Email is required';
+        else if (!isValidEmail(email)) e.email       = 'Enter a valid email address';
+        if (!dob)                      e.dob         = 'Date of birth is required (DD/MM/YYYY)';
+        if (!password)                 e.password    = 'Password is required';
+        else if (password.length < 6)  e.password    = 'Password must be at least 6 characters';
+        if (password !== confirmPass)  e.confirmPass = 'Passwords do not match';
+        setErrors(e);
+        return Object.keys(e).length === 0;
+    };
+
+    // ── Submit ─────────────────────────────────────────────────────────────────
+    const handleSignup = async () => {
+        if (!validate()) return;
         setLoading(true);
         try {
-            await signup({
-                email,
-                password,
-                fullName,
-                university,
-                campus,
-                course,
-                semester,
-                interests: selectedInterests,
-            });
-        } catch (error: any) {
-            Alert.alert('Signup Failed', error.message || 'Please try again');
+            await signup(fullName.trim(), email.trim().toLowerCase(), dob, password);
+            navigation.navigate('VerifyOTP', { email: email.trim().toLowerCase() });
+        } catch (e: any) {
+            const msg: string = e.message || '';
+            if (msg.includes('not verified') || msg.includes('EMAIL_UNVERIFIED')) {
+                // Account exists but unverified — go to OTP screen
+                navigation.navigate('VerifyOTP', { email: email.trim().toLowerCase() });
+            } else {
+                Alert.alert('Sign Up Failed', msg || 'Something went wrong. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    const toggleInterest = (interest: string) => {
-        if (selectedInterests.includes(interest)) {
-            setSelectedInterests(selectedInterests.filter(i => i !== interest));
-        } else if (selectedInterests.length < 6) {
-            setSelectedInterests([...selectedInterests, interest]);
-        }
-    };
-
-    // Selection Chip Component
-    const SelectionChip = ({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) => (
-        <TouchableOpacity
-            style={[
-                styles.chip,
-                { backgroundColor: selected ? colors.primary : colors.surface, borderColor: selected ? colors.primary : colors.border }
-            ]}
-            onPress={onPress}
-        >
-            <Text style={[styles.chipText, { color: selected ? '#FFFFFF' : colors.text }]}>
-                {label}
-            </Text>
-            {selected && <Ionicons name="checkmark" size={16} color="#FFFFFF" style={{ marginLeft: 4 }} />}
-        </TouchableOpacity>
-    );
-
-    const renderProgressBar = () => (
-        <View style={styles.progressContainer}>
-            <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-                <Animated.View
-                    style={[
-                        styles.progressFill,
-                        { backgroundColor: colors.primary, width: `${(step / totalSteps) * 100}%` }
-                    ]}
-                />
-            </View>
-            <Text style={[styles.progressText, { color: colors.textTertiary }]}>
-                Step {step} of {totalSteps}
-            </Text>
-        </View>
-    );
-
-    const renderStep1 = () => (
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.stepContent}>
-            <View style={styles.stepHeader}>
-                <Text style={styles.stepEmoji}>✉️</Text>
-                <Text style={[styles.stepTitle, { color: colors.text }]}>Create Account</Text>
-                <Text style={[styles.stepSubtitle, { color: colors.textSecondary }]}>
-                    Enter your credentials to get started
-                </Text>
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Email</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: errors.email ? colors.error : colors.border }]}>
-                    <Ionicons name="mail-outline" size={20} color={colors.textTertiary} />
-                    <CampusLoopInput
-                        placeholder="your.email@university.edu"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        containerStyle={styles.inputInner}
-                    />
-                </View>
-                {errors.email && <Text style={[styles.errorText, { color: colors.error }]}>{errors.email}</Text>}
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Password</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: errors.password ? colors.error : colors.border }]}>
-                    <Ionicons name="lock-closed-outline" size={20} color={colors.textTertiary} />
-                    <CampusLoopInput
-                        placeholder="Create a password"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={!showPassword}
-                        autoComplete="off"
-                        autoCorrect={false}
-                        containerStyle={styles.inputInner}
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                        <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.textTertiary} />
-                    </TouchableOpacity>
-                </View>
-                {errors.password && <Text style={[styles.errorText, { color: colors.error }]}>{errors.password}</Text>}
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Confirm Password</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: errors.confirmPassword ? colors.error : colors.border }]}>
-                    <Ionicons name="lock-closed-outline" size={20} color={colors.textTertiary} />
-                    <CampusLoopInput
-                        placeholder="Confirm your password"
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        secureTextEntry={!showPassword}
-                        autoComplete="off"
-                        autoCorrect={false}
-                        containerStyle={styles.inputInner}
-                    />
-                </View>
-                {errors.confirmPassword && <Text style={[styles.errorText, { color: colors.error }]}>{errors.confirmPassword}</Text>}
-            </View>
-        </Animated.View>
-    );
-
-    const renderStep2 = () => (
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.stepContent}>
-            <View style={styles.stepHeader}>
-                <Text style={styles.stepEmoji}>👤</Text>
-                <Text style={[styles.stepTitle, { color: colors.text }]}>Personal Info</Text>
-                <Text style={[styles.stepSubtitle, { color: colors.textSecondary }]}>
-                    Tell us a bit about yourself
-                </Text>
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Full Name</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: colors.background, borderColor: errors.fullName ? colors.error : colors.border }]}>
-                    <Ionicons name="person-outline" size={20} color={colors.textTertiary} />
-                    <CampusLoopInput
-                        placeholder="Your full name"
-                        value={fullName}
-                        onChangeText={setFullName}
-                        containerStyle={styles.inputInner}
-                    />
-                </View>
-                {errors.fullName && <Text style={[styles.errorText, { color: colors.error }]}>{errors.fullName}</Text>}
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>University</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-                    {CampusLoopUniversities.slice(0, 8).map(uni => (
-                        <SelectionChip key={uni} label={uni} selected={university === uni} onPress={() => setUniversity(uni)} />
-                    ))}
-                </ScrollView>
-                {errors.university && <Text style={[styles.errorText, { color: colors.error }]}>{errors.university}</Text>}
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Campus <Text style={{ color: colors.textTertiary }}>(optional)</Text></Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-                    {campusOptions.map(c => (
-                        <SelectionChip key={c} label={c} selected={campus === c} onPress={() => setCampus(c)} />
-                    ))}
-                </ScrollView>
-            </View>
-        </Animated.View>
-    );
-
-    const renderStep3 = () => (
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.stepContent}>
-            <View style={styles.stepHeader}>
-                <Text style={styles.stepEmoji}>🎓</Text>
-                <Text style={[styles.stepTitle, { color: colors.text }]}>Academic Info</Text>
-                <Text style={[styles.stepSubtitle, { color: colors.textSecondary }]}>
-                    Your program details
-                </Text>
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Program</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-                    {CampusLoopCourses.slice(0, 12).map(c => (
-                        <SelectionChip key={c} label={c} selected={course === c} onPress={() => setCourse(c)} />
-                    ))}
-                </ScrollView>
-                {errors.course && <Text style={[styles.errorText, { color: colors.error }]}>{errors.course}</Text>}
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Semester</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-                    {CampusLoopSemesters.map(sem => (
-                        <SelectionChip key={sem} label={sem} selected={semester === sem} onPress={() => setSemester(sem)} />
-                    ))}
-                </ScrollView>
-                {errors.semester && <Text style={[styles.errorText, { color: colors.error }]}>{errors.semester}</Text>}
-            </View>
-        </Animated.View>
-    );
-
-    const renderStep4 = () => (
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.stepContent}>
-            <View style={styles.stepHeader}>
-                <Text style={styles.stepEmoji}>💡</Text>
-                <Text style={[styles.stepTitle, { color: colors.text }]}>Your Interests</Text>
-                <Text style={[styles.stepSubtitle, { color: colors.textSecondary }]}>
-                    Select up to 6 interests to personalize your feed
-                </Text>
-            </View>
-
-            <View style={styles.interestsGrid}>
-                {CampusLoopInterests.map(interest => (
-                    <TouchableOpacity
-                        key={interest}
-                        style={[
-                            styles.interestChip,
-                            {
-                                backgroundColor: selectedInterests.includes(interest) ? colors.primary + '15' : colors.surface,
-                                borderColor: selectedInterests.includes(interest) ? colors.primary : colors.border,
-                            }
-                        ]}
-                        onPress={() => toggleInterest(interest)}
-                    >
-                        <Text style={[
-                            styles.interestText,
-                            { color: selectedInterests.includes(interest) ? colors.primary : colors.text }
-                        ]}>
-                            {interest}
-                        </Text>
-                        {selectedInterests.includes(interest) && (
-                            <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
-                        )}
-                    </TouchableOpacity>
-                ))}
-            </View>
-            <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
-                {selectedInterests.length}/6 selected
-            </Text>
-        </Animated.View>
-    );
-
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <StatusBar barStyle="dark-content" />
+        <View style={styles.root}>
+            <StatusBar barStyle="light-content" />
+
+            <LinearGradient colors={['#059669', '#10B981']} style={styles.header}>
+                <Animated.View entering={FadeInDown.duration(600)} style={styles.logoRow}>
+                    <Image source={require('../../assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
+                    <Text style={styles.appName}>CampusLoop</Text>
+                    <Text style={styles.tagline}>City University Community</Text>
+                </Animated.View>
+            </LinearGradient>
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.keyboardView}
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
             >
                 <ScrollView
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scroll}
                     keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
                 >
-                    {/* Back Button */}
-                    <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-                        <Ionicons name="arrow-back" size={24} color={colors.text} />
-                    </TouchableOpacity>
+                    <Animated.View entering={FadeInUp.delay(200).duration(600)} style={styles.card}>
+                        <Text style={styles.cardTitle}>Create Account</Text>
+                        <Text style={styles.cardSubtitle}>Join your campus community today</Text>
 
-                    {/* Progress */}
-                    {renderProgressBar()}
-
-                    {/* Form Card */}
-                    <View style={[styles.formCard, { backgroundColor: colors.surface }]}>
-                        {step === 1 && renderStep1()}
-                        {step === 2 && renderStep2()}
-                        {step === 3 && renderStep3()}
-                        {step === 4 && renderStep4()}
-
-                        {/* Navigation Buttons */}
-                        <View style={styles.buttonRow}>
-                            {step < totalSteps ? (
-                                <TouchableOpacity
-                                    style={styles.primaryButton}
-                                    onPress={handleNext}
-                                >
-                                    <LinearGradient
-                                        colors={[colors.gradientStart, colors.gradientEnd]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        style={styles.buttonGradient}
-                                    >
-                                        <Text style={styles.buttonText}>Continue</Text>
-                                        <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-                                    </LinearGradient>
-                                </TouchableOpacity>
-                            ) : (
-                                <TouchableOpacity
-                                    style={[styles.primaryButton, { opacity: loading ? 0.7 : 1 }]}
-                                    onPress={handleSignup}
-                                    disabled={loading}
-                                >
-                                    <LinearGradient
-                                        colors={[colors.gradientStart, colors.gradientEnd]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        style={styles.buttonGradient}
-                                    >
-                                        <Text style={styles.buttonText}>
-                                            {loading ? 'Creating Account...' : 'Complete Signup'}
-                                        </Text>
-                                    </LinearGradient>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-
-                    {/* Login Link */}
-                    <View style={styles.loginRow}>
-                        <Text style={[styles.loginText, { color: colors.textSecondary }]}>
-                            Already have an account?{' '}
-                        </Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                            <Text style={[styles.loginLink, { color: colors.primary }]}>Login</Text>
+                        {/* Google */}
+                        <TouchableOpacity
+                            style={styles.googleBtn}
+                            onPress={handleGooglePress}
+                            disabled={googleLoad}
+                            activeOpacity={0.85}
+                        >
+                            {googleLoad
+                                ? <ActivityIndicator color="#374151" size="small" />
+                                : <>
+                                    <Text style={styles.googleG}>G</Text>
+                                    <Text style={styles.googleBtnText}>Continue with Google</Text>
+                                </>}
                         </TouchableOpacity>
-                    </View>
+
+                        {/* Apple — iOS only */}
+                        {Platform.OS === 'ios' && (
+                            <AppleAuthentication.AppleAuthenticationButton
+                                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+                                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                                cornerRadius={12}
+                                style={styles.appleBtn}
+                                onPress={handleApple}
+                            />
+                        )}
+
+                        {/* Divider */}
+                        <View style={styles.divider}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>or sign up with email</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        {/* Full Name */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Full Name <Text style={styles.req}>*</Text></Text>
+                            <View style={[styles.inputRow, errors.fullName ? styles.inputError : null]}>
+                                <Ionicons name="person-outline" size={18} color="#9ca3af" style={styles.icon} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="e.g. Ahmad Syahrizal"
+                                    placeholderTextColor="#d1d5db"
+                                    value={fullName}
+                                    onChangeText={v => { setFullName(v); setErrors(p => ({ ...p, fullName: '' })); }}
+                                    autoCapitalize="words"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => emailRef.current?.focus()}
+                                />
+                            </View>
+                            {!!errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
+                        </View>
+
+                        {/* Email */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Email Address <Text style={styles.req}>*</Text></Text>
+                            <View style={[styles.inputRow, errors.email ? styles.inputError : null]}>
+                                <Ionicons name="mail-outline" size={18} color="#9ca3af" style={styles.icon} />
+                                <TextInput
+                                    ref={emailRef}
+                                    style={styles.input}
+                                    placeholder="your@email.com"
+                                    placeholderTextColor="#d1d5db"
+                                    value={email}
+                                    onChangeText={v => { setEmail(v); setErrors(p => ({ ...p, email: '' })); }}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => dobRef.current?.focus()}
+                                />
+                            </View>
+                            {!!errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+                        </View>
+
+                        {/* Date of Birth */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Date of Birth <Text style={styles.req}>*</Text></Text>
+                            <View style={[styles.inputRow, errors.dob ? styles.inputError : null]}>
+                                <Ionicons name="calendar-outline" size={18} color="#9ca3af" style={styles.icon} />
+                                <TextInput
+                                    ref={dobRef}
+                                    style={styles.input}
+                                    placeholder="DD/MM/YYYY"
+                                    placeholderTextColor="#d1d5db"
+                                    value={dobDisplay}
+                                    onChangeText={handleDobChange}
+                                    keyboardType="number-pad"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => passRef.current?.focus()}
+                                />
+                            </View>
+                            {!!errors.dob && <Text style={styles.errorText}>{errors.dob}</Text>}
+                        </View>
+
+                        {/* Password */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Password <Text style={styles.req}>*</Text></Text>
+                            <View style={[styles.inputRow, errors.password ? styles.inputError : null]}>
+                                <Ionicons name="lock-closed-outline" size={18} color="#9ca3af" style={styles.icon} />
+                                <TextInput
+                                    ref={passRef}
+                                    style={styles.input}
+                                    placeholder="At least 6 characters"
+                                    placeholderTextColor="#d1d5db"
+                                    value={password}
+                                    onChangeText={v => { setPassword(v); setErrors(p => ({ ...p, password: '' })); }}
+                                    secureTextEntry={!showPass}
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => confirmRef.current?.focus()}
+                                />
+                                <TouchableOpacity onPress={() => setShowPass(p => !p)} style={{ padding: 4 }}>
+                                    <Ionicons name={showPass ? 'eye-outline' : 'eye-off-outline'} size={20} color="#9ca3af" />
+                                </TouchableOpacity>
+                            </View>
+                            {!!errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+                        </View>
+
+                        {/* Confirm Password */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Confirm Password <Text style={styles.req}>*</Text></Text>
+                            <View style={[styles.inputRow, errors.confirmPass ? styles.inputError : null]}>
+                                <Ionicons name="lock-closed-outline" size={18} color="#9ca3af" style={styles.icon} />
+                                <TextInput
+                                    ref={confirmRef}
+                                    style={styles.input}
+                                    placeholder="Re-enter your password"
+                                    placeholderTextColor="#d1d5db"
+                                    value={confirmPass}
+                                    onChangeText={v => { setConfirmPass(v); setErrors(p => ({ ...p, confirmPass: '' })); }}
+                                    secureTextEntry={!showConfirm}
+                                    returnKeyType="done"
+                                    onSubmitEditing={handleSignup}
+                                />
+                                <TouchableOpacity onPress={() => setShowConfirm(p => !p)} style={{ padding: 4 }}>
+                                    <Ionicons name={showConfirm ? 'eye-outline' : 'eye-off-outline'} size={20} color="#9ca3af" />
+                                </TouchableOpacity>
+                            </View>
+                            {!!errors.confirmPass && <Text style={styles.errorText}>{errors.confirmPass}</Text>}
+                        </View>
+
+                        {/* Submit */}
+                        <TouchableOpacity
+                            style={[styles.signupBtn, loading && styles.btnDisabled]}
+                            onPress={handleSignup}
+                            disabled={loading}
+                            activeOpacity={0.85}
+                        >
+                            {loading
+                                ? <ActivityIndicator color="#fff" />
+                                : <>
+                                    <Text style={styles.signupBtnText}>Create Account</Text>
+                                    <Ionicons name="arrow-forward" size={18} color="#fff" />
+                                </>}
+                        </TouchableOpacity>
+
+                        {/* Login link */}
+                        <TouchableOpacity
+                            style={styles.loginRow}
+                            onPress={() => navigation.navigate('Login')}
+                        >
+                            <Text style={styles.loginText}>Already have an account? </Text>
+                            <Text style={styles.loginLink}>Sign In</Text>
+                        </TouchableOpacity>
+                    </Animated.View>
                 </ScrollView>
             </KeyboardAvoidingView>
         </View>
@@ -471,163 +355,42 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    keyboardView: {
-        flex: 1,
-    },
-    scrollContent: {
-        flexGrow: 1,
-        paddingHorizontal: CampusLoopSpacing.xl,
-        paddingTop: Platform.OS === 'ios' ? 60 : 40,
-        paddingBottom: CampusLoopSpacing['2xl'],
-    },
-    backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: 'rgba(0,0,0,0.05)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: CampusLoopSpacing.lg,
-    },
-    progressContainer: {
-        marginBottom: CampusLoopSpacing.lg,
-    },
-    progressTrack: {
-        height: 6,
-        borderRadius: 3,
-        marginBottom: CampusLoopSpacing.sm,
-    },
-    progressFill: {
-        height: '100%',
-        borderRadius: 3,
-    },
-    progressText: {
-        fontSize: CampusLoopTypography.fontSize.sm,
-        textAlign: 'right',
-    },
-    formCard: {
-        borderRadius: CampusLoopBorderRadius['2xl'],
-        padding: CampusLoopSpacing.xl,
-        ...CampusLoopShadows.lg,
-    },
-    stepContent: {},
-    stepHeader: {
-        alignItems: 'center',
-        marginBottom: CampusLoopSpacing.xl,
-    },
-    stepEmoji: {
-        fontSize: 48,
-        marginBottom: CampusLoopSpacing.md,
-    },
-    stepTitle: {
-        fontSize: CampusLoopTypography.fontSize['2xl'],
-        fontWeight: CampusLoopTypography.fontWeight.bold,
-        marginBottom: CampusLoopSpacing.xs,
-    },
-    stepSubtitle: {
-        fontSize: CampusLoopTypography.fontSize.base,
-        textAlign: 'center',
-    },
-    inputGroup: {
-        marginBottom: CampusLoopSpacing.lg,
-    },
-    inputLabel: {
-        fontSize: CampusLoopTypography.fontSize.sm,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
-        marginBottom: CampusLoopSpacing.sm,
-    },
-    inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderRadius: CampusLoopBorderRadius.lg,
-        borderWidth: 1.5,
-        paddingHorizontal: CampusLoopSpacing.base,
-        gap: CampusLoopSpacing.sm,
-    },
-    inputInner: {
-        flex: 1,
-        marginBottom: 0,
-        borderWidth: 0,
-        backgroundColor: 'transparent',
-    },
-    errorText: {
-        fontSize: CampusLoopTypography.fontSize.xs,
-        marginTop: 4,
-    },
-    chipScroll: {
-        marginTop: CampusLoopSpacing.sm,
-    },
-    chip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: CampusLoopSpacing.md,
-        paddingVertical: CampusLoopSpacing.sm,
-        borderRadius: CampusLoopBorderRadius.full,
-        borderWidth: 1.5,
-        marginRight: CampusLoopSpacing.sm,
-    },
-    chipText: {
-        fontSize: CampusLoopTypography.fontSize.sm,
-        fontWeight: CampusLoopTypography.fontWeight.medium,
-    },
-    interestsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: CampusLoopSpacing.sm,
-    },
-    interestChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: CampusLoopSpacing.md,
-        paddingVertical: CampusLoopSpacing.sm,
-        borderRadius: CampusLoopBorderRadius.full,
-        borderWidth: 1.5,
-        gap: CampusLoopSpacing.xs,
-    },
-    interestText: {
-        fontSize: CampusLoopTypography.fontSize.sm,
-        fontWeight: CampusLoopTypography.fontWeight.medium,
-    },
-    selectedCount: {
-        fontSize: CampusLoopTypography.fontSize.sm,
-        textAlign: 'center',
-        marginTop: CampusLoopSpacing.lg,
-    },
-    buttonRow: {
-        marginTop: CampusLoopSpacing.xl,
-    },
-    primaryButton: {
-        borderRadius: CampusLoopBorderRadius.lg,
-        overflow: 'hidden',
-    },
-    buttonGradient: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: CampusLoopSpacing.base + 2,
-        gap: CampusLoopSpacing.sm,
-    },
-    buttonText: {
-        color: '#FFFFFF',
-        fontSize: CampusLoopTypography.fontSize.lg,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
-    },
-    loginRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: CampusLoopSpacing.xl,
-    },
-    loginText: {
-        fontSize: CampusLoopTypography.fontSize.base,
-    },
-    loginLink: {
-        fontSize: CampusLoopTypography.fontSize.base,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
-    },
+    root:          { flex: 1, backgroundColor: '#f9fafb' },
+    header:        { paddingTop: Platform.OS === 'ios' ? 60 : 48, paddingBottom: 40, alignItems: 'center' },
+    logoRow:       { alignItems: 'center', gap: 8 },
+    logo:          { width: 72, height: 72, borderRadius: 18, backgroundColor: '#fff' },
+    appName:       { fontSize: 26, fontWeight: '800', color: '#fff' },
+    tagline:       { fontSize: 14, color: 'rgba(255,255,255,0.85)' },
+    scroll:        { paddingHorizontal: 20, paddingBottom: 40 },
+    card:          { backgroundColor: '#fff', borderRadius: 24, padding: 24, marginTop: -20,
+                     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 8 },
+    cardTitle:     { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 4 },
+    cardSubtitle:  { fontSize: 14, color: '#6b7280', marginBottom: 24 },
+    googleBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+                     backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 12,
+                     height: 52, marginBottom: 12 },
+    googleG:       { fontSize: 20, fontWeight: '900', color: '#4285F4' },
+    googleBtnText: { fontSize: 15, fontWeight: '600', color: '#374151' },
+    appleBtn:      { height: 52, marginBottom: 12 },
+    divider:       { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
+    dividerLine:   { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
+    dividerText:   { fontSize: 13, color: '#9ca3af', marginHorizontal: 12 },
+    fieldGroup:    { marginBottom: 16 },
+    label:         { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
+    req:           { color: '#ef4444' },
+    inputRow:      { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9fafb',
+                     borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, height: 52 },
+    inputError:    { borderColor: '#ef4444' },
+    icon:          { marginRight: 10 },
+    input:         { flex: 1, fontSize: 15, color: '#111827' },
+    errorText:     { fontSize: 12, color: '#ef4444', marginTop: 4 },
+    signupBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                     backgroundColor: '#10B981', borderRadius: 12, height: 52, marginTop: 4 },
+    btnDisabled:   { opacity: 0.6 },
+    signupBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    loginRow:      { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+    loginText:     { fontSize: 14, color: '#6b7280' },
+    loginLink:     { fontSize: 14, color: '#10B981', fontWeight: '700' },
 });
 
 export default SignupScreen;
-
