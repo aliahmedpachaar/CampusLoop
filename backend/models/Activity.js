@@ -97,14 +97,16 @@ activitySchema.virtual('spotsLeft').get(function() {
 
 // Check if user is participant
 activitySchema.methods.isParticipant = function(userId) {
-    return this.participants.some(p =>
-        p.user.toString() === userId.toString() && p.status === 'accepted'
-    );
+    return this.participants.some(p => {
+        const participantId = p.user?._id || p.user;
+        return participantId.toString() === userId.toString() && p.status === 'accepted';
+    });
 };
 
-// Check if user is creator
+// Check if user is creator — works whether creator is populated or not
 activitySchema.methods.isCreator = function(userId) {
-    return this.creator.toString() === userId.toString();
+    const creatorId = this.creator?._id || this.creator;
+    return creatorId.toString() === userId.toString();
 };
 
 // Ensure virtuals are included in JSON

@@ -53,6 +53,16 @@ export const API_CONFIG = {
         NOTIFICATIONS:    '/api/notifications',
         MARK_READ:        (id: string) => `/api/notifications/${id}/read`,
         MARK_ALL_READ:    '/api/notifications/read-all',
+
+        // Posts
+        POSTS:            '/api/posts',
+        LIKE_POST:        (id: string) => `/api/posts/${id}/like`,
+        COMMENT_POST:     (id: string) => `/api/posts/${id}/comment`,
+        DELETE_POST:      (id: string) => `/api/posts/${id}`,
+
+        // Search
+        SEARCH_ACTIVITIES: '/api/activities',
+        SEARCH_USERS:      '/api/users',
     },
 };
 

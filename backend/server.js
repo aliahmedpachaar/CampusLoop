@@ -17,6 +17,7 @@ const activityRoutes = require('./routes/activities');
 const userRoutes = require('./routes/users');
 const messageRoutes = require('./routes/messages');
 const notificationRoutes = require('./routes/notifications');
+const postRoutes = require('./routes/posts');
 
 // Initialize express app
 const app = express();
@@ -52,6 +53,7 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/posts', postRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -104,9 +106,9 @@ io.on('connection', (socket) => {
         console.log(`Socket left activity: ${activityId}`);
     });
 
-    // Handle new message
+    // Handle new message — broadcast to others only, sender already has it optimistically
     socket.on('sendMessage', (data) => {
-        io.to(`activity_${data.activityId}`).emit('newMessage', data);
+        socket.to(`activity_${data.activityId}`).emit('newMessage', data);
     });
 
     // Handle typing indicator

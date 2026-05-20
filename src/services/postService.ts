@@ -1,171 +1,74 @@
-/**
- * CampusLoop Post Service
- * Mock post and feed service - ready for backend integration
- */
-
-import {
-    CampusLoopPost,
-    CampusLoopComment,
-    CampusLoopCreatePostData,
-    CampusLoopPostCategory,
-} from '../types/post';
-
-const mockDelay = (ms: number = 700) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Mock posts database
-let mockPosts: CampusLoopPost[] = [
-    {
-        id: 'post_1',
-        authorId: '2',
-        authorName: 'Sarah Johnson',
-        authorUniversity: 'Massachusetts Institute of Technology (MIT)',
-        category: 'assignment',
-        content: 'Looking for 2 people to collaborate on the Machine Learning assignment due next week. Anyone interested?',
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        likesCount: 5,
-        commentsCount: 3,
-        isLiked: false,
-    },
-    {
-        id: 'post_2',
-        authorId: '1',
-        authorName: 'Demo Student',
-        authorUniversity: 'Stanford University',
-        category: 'coding',
-        content: 'Anyone working on a React Native project? Would love to share tips and collaborate!',
-        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-        likesCount: 12,
-        commentsCount: 7,
-        isLiked: true,
-    },
-    {
-        id: 'post_3',
-        authorId: '2',
-        authorName: 'Sarah Johnson',
-        authorUniversity: 'Massachusetts Institute of Technology (MIT)',
-        category: 'sports',
-        content: 'Basketball game this Saturday at 4 PM. Need 2 more players! 🏀',
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-        likesCount: 8,
-        commentsCount: 4,
-        isLiked: false,
-    },
-];
+import { CampusLoopPost, CampusLoopComment, CampusLoopCreatePostData, CampusLoopPostCategory } from '../types/post';
+import { apiService } from './api';
+import { API_CONFIG } from '../config/api';
 
 export const CampusLoopPostService = {
-    /**
-     * Get posts with optional filters
-     * TODO: Replace with actual API call
-     */
-    getPosts: async (
-        category?: CampusLoopPostCategory,
-        userId?: string
-    ): Promise<CampusLoopPost[]> => {
-        await mockDelay();
 
-        let filtered = [...mockPosts];
-
-        if (category) {
-            filtered = filtered.filter(post => post.category === category);
-        }
-
-        if (userId) {
-            filtered = filtered.filter(post => post.authorId === userId);
-        }
-
-        // Sort by date (newest first)
-        return filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    getPosts: async (category?: CampusLoopPostCategory | 'all'): Promise<CampusLoopPost[]> => {
+        const params: Record<string, string> = {};
+        if (category && category !== 'all') params.category = category;
+        const res = await apiService.get<any[]>(API_CONFIG.ENDPOINTS.POSTS, params);
+        if (!res.success || !res.data) return [];
+        return res.data.map((p: any) => ({
+            id:               p.id,
+            authorId:         p.authorId,
+            authorName:       p.authorName,
+            authorAvatar:     p.authorAvatar,
+            authorUniversity: p.authorCampus || '',
+            category:         p.category,
+            content:          p.content,
+            likesCount:       p.likesCount,
+            commentsCount:    p.commentsCount,
+            isLiked:          p.isLiked,
+            comments:         p.comments || [],
+            createdAt:        new Date(p.createdAt),
+        }));
     },
 
-    /**
-     * Create new post
-     * TODO: Replace with actual API call
-     */
-    createPost: async (
-        userId: string,
-        userName: string,
-        userUniversity: string,
-        data: CampusLoopCreatePostData
-    ): Promise<CampusLoopPost> => {
-        await mockDelay(800);
-
-        const newPost: CampusLoopPost = {
-            id: `post_${Date.now()}`,
-            authorId: userId,
-            authorName: userName,
-            authorUniversity: userUniversity,
-            category: data.category,
-            content: data.content,
-            createdAt: new Date(),
-            likesCount: 0,
-            commentsCount: 0,
-            isLiked: false,
+    createPost: async (_userId: string, _userName: string, _university: string, data: CampusLoopCreatePostData): Promise<CampusLoopPost> => {
+        const res = await apiService.post<any>(API_CONFIG.ENDPOINTS.POSTS, data);
+        if (!res.success || !res.data) throw new Error(res.message || 'Failed to create post');
+        const p = res.data;
+        return {
+            id:               p.id,
+            authorId:         p.authorId,
+            authorName:       p.authorName,
+            authorAvatar:     p.authorAvatar,
+            authorUniversity: p.authorCampus || '',
+            category:         p.category,
+            content:          p.content,
+            likesCount:       0,
+            commentsCount:    0,
+            isLiked:          false,
+            comments:         [],
+            createdAt:        new Date(p.createdAt),
         };
-
-        mockPosts.unshift(newPost);
-        return newPost;
     },
 
-    /**
-     * Toggle like on post
-     * TODO: Replace with actual API call
-     */
-    likePost: async (postId: string, userId: string): Promise<CampusLoopPost> => {
-        await mockDelay(300);
-
-        const post = mockPosts.find(p => p.id === postId);
-
-        if (!post) {
-            throw new Error('Post not found');
-        }
-
-        // Toggle like
-        post.isLiked = !post.isLiked;
-        post.likesCount += post.isLiked ? 1 : -1;
-
-        return post;
+    likePost: async (postId: string, _userId: string): Promise<{ likesCount: number; isLiked: boolean }> => {
+        const res = await apiService.post<any>(API_CONFIG.ENDPOINTS.LIKE_POST(postId));
+        if (!res.success || !res.data) throw new Error('Failed to like post');
+        return { likesCount: res.data.likesCount, isLiked: res.data.isLiked };
     },
 
-    /**
-     * Add comment to post
-     * TODO: Replace with actual API call
-     */
-    addComment: async (
-        postId: string,
-        userId: string,
-        userName: string,
-        content: string
-    ): Promise<CampusLoopComment> => {
-        await mockDelay(500);
-
-        const post = mockPosts.find(p => p.id === postId);
-
-        if (!post) {
-            throw new Error('Post not found');
-        }
-
-        const comment: CampusLoopComment = {
-            id: `comment_${Date.now()}`,
+    addComment: async (postId: string, _userId: string, _userName: string, content: string): Promise<CampusLoopComment> => {
+        const res = await apiService.post<any>(API_CONFIG.ENDPOINTS.COMMENT_POST(postId), { content });
+        if (!res.success || !res.data) throw new Error('Failed to add comment');
+        const c = res.data;
+        return {
+            id:           c.id,
             postId,
-            authorId: userId,
-            authorName: userName,
-            content,
-            createdAt: new Date(),
+            authorId:     c.authorId,
+            authorName:   c.authorName,
+            authorAvatar: c.authorAvatar,
+            content:      c.content,
+            createdAt:    new Date(c.createdAt),
         };
-
-        post.commentsCount += 1;
-
-        return comment;
     },
 
-    /**
-     * Get comments for a post
-     * TODO: Replace with actual API call
-     */
-    getComments: async (postId: string): Promise<CampusLoopComment[]> => {
-        await mockDelay(500);
-
-        // Mock comments
-        return [];
+    deletePost: async (postId: string): Promise<void> => {
+        await apiService.delete(API_CONFIG.ENDPOINTS.DELETE_POST(postId));
     },
+
+    getComments: async (_postId: string): Promise<CampusLoopComment[]> => [],
 };

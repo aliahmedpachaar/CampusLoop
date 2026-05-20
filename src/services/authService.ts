@@ -15,21 +15,23 @@ export interface CampusLoopAuthResponse {
 }
 
 const transformUser = (u: any): CampusLoopUser => ({
-    id:              u.id || u._id,
-    email:           u.email,
-    fullName:        u.fullName || '',
-    university:      u.university || 'City University Malaysia',
-    campus:          u.campus    || '',
-    course:          u.course    || '',
-    semester:        u.semester  || '',
-    interests:       u.interests || [],
-    profilePicture:  u.avatar    || '',
-    bio:             u.bio       || '',
-    emailVerified:   u.emailVerified   ?? false,
-    profileComplete: u.profileComplete ?? false,
-    authProvider:    u.authProvider    || 'email',
-    createdAt:       new Date(u.createdAt),
-    locationEnabled: false,
+    id:                u.id || u._id,
+    email:             u.email,
+    fullName:          u.fullName || '',
+    university:        u.university || 'City University Malaysia',
+    campus:            u.campus    || '',
+    course:            u.course    || '',
+    semester:          u.semester  || '',
+    interests:         u.interests || [],
+    profilePicture:    u.avatar    || u.profilePicture || '',
+    bio:               u.bio       || '',
+    emailVerified:     u.emailVerified   ?? false,
+    profileComplete:   u.profileComplete ?? false,
+    authProvider:      u.authProvider    || 'email',
+    createdAt:         new Date(u.createdAt),
+    locationEnabled:   false,
+    activitiesJoined:  Array.isArray(u.activitiesJoined)  ? u.activitiesJoined  : [],
+    activitiesCreated: Array.isArray(u.activitiesCreated) ? u.activitiesCreated : [],
 });
 
 export const CampusLoopAuthService = {

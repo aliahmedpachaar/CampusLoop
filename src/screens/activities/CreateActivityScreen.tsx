@@ -46,6 +46,7 @@ const activityTypes = [
     { key: 'trips', icon: '✈️', label: 'Trip', color: '#0EA5E9', description: 'Plan a trip or outing' },
     { key: 'food', icon: '🍕', label: 'Food', color: '#F97316', description: 'Grab food or coffee together' },
     { key: 'project_collab', icon: '💻', label: 'Project', color: '#8B5CF6', description: 'Collaborate on projects' },
+    { key: 'other', icon: '💡', label: 'Others', color: '#64748B', description: 'Anything else you have in mind' },
 ];
 
 const participantOptions = [2, 3, 4, 5, 6, 8, 10, 15, 20];
@@ -142,7 +143,7 @@ export const CreateActivityScreen: React.FC<CreateActivityScreenProps> = ({ navi
     };
 
     const renderTypeSelection = () => (
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.stepContent}>
+        <View style={styles.stepContent}>
             <Text style={[styles.stepTitle, { color: colors.text }]}>
                 What kind of activity?
             </Text>
@@ -152,10 +153,7 @@ export const CreateActivityScreen: React.FC<CreateActivityScreenProps> = ({ navi
 
             <View style={styles.typeGrid}>
                 {activityTypes.map((type, index) => (
-                    <Animated.View
-                        key={type.key}
-                        entering={FadeInDown.delay(index * 50).duration(300)}
-                    >
+                    <View key={type.key}>
                         <TouchableOpacity
                             style={[
                                 styles.typeCard,
@@ -174,14 +172,14 @@ export const CreateActivityScreen: React.FC<CreateActivityScreenProps> = ({ navi
                                 {type.description}
                             </Text>
                         </TouchableOpacity>
-                    </Animated.View>
+                    </View>
                 ))}
             </View>
-        </Animated.View>
+        </View>
     );
 
     const renderDetailsForm = () => (
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.stepContent}>
+        <View style={styles.stepContent}>
             {/* Selected Type Badge */}
             {selectedTypeInfo && (
                 <TouchableOpacity
@@ -339,7 +337,7 @@ export const CreateActivityScreen: React.FC<CreateActivityScreenProps> = ({ navi
                     {!loading && <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />}
                 </LinearGradient>
             </TouchableOpacity>
-        </Animated.View>
+        </View>
     );
 
     return (

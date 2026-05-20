@@ -3,7 +3,7 @@
  * Main feed with featured activities and quick actions
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -14,6 +14,7 @@ import {
     Dimensions,
     StatusBar,
     ScrollView,
+    Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -27,7 +28,10 @@ import { useCampusLoopTheme } from '../../context/ThemeContext';
 import { useCampusLoopAuth } from '../../context/AuthContext';
 import { CampusLoopAvatar } from '../../components/common/Avatar';
 import { CampusLoopActivityService } from '../../services/activityService';
+import { CampusLoopPostService } from '../../services/postService';
 import { CampusLoopActivity } from '../../types/activity';
+import { CampusLoopPost, CampusLoopPostCategory } from '../../types/post';
+import { PostCard } from '../../components/posts/PostCard';
 import { formatRelativeTime } from '../../utils/formatting';
 import {
     CampusLoopSpacing,
@@ -36,6 +40,7 @@ import {
     CampusLoopShadows,
 } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useNotifications } from '../../context/NotificationContext';
 
 const { width } = Dimensions.get('window');
 
@@ -53,8 +58,16 @@ const FeaturedActivityCard: React.FC<{
         study_group: { bg: '#0D9488', icon: '📚' },
         assignment_help: { bg: '#F59E0B', icon: '🤝' },
         sports: { bg: '#10B981', icon: '⚽' },
-        event: { bg: '#EF4444', icon: '🎬' },
-        project_collab: { bg: '#8B5CF6', icon: '💻' },
+        movies: { bg: '#EF4444', icon: '🎬' },
+        movie: { bg: '#EF4444', icon: '🎬' },
+        trip: { bg: '#0EA5E9', icon: '✈️' },
+        trips: { bg: '#0EA5E9', icon: '✈️' },
+        food: { bg: '#F97316', icon: '🍕' },
+        event: { bg: '#8B5CF6', icon: '🎉' },
+        events: { bg: '#8B5CF6', icon: '🎉' },
+        project: { bg: '#6366F1', icon: '💻' },
+        project_collab: { bg: '#6366F1', icon: '💻' },
+        other: { bg: '#64748B', icon: '💡' },
     };
     const cat = categoryColors[activity.type] || { bg: '#64748B', icon: '🎯' };
 
@@ -115,8 +128,16 @@ const ActivityRowItem: React.FC<{
         study_group: '📚',
         assignment_help: '🤝',
         sports: '⚽',
-        event: '🎬',
+        movies: '🎬',
+        movie: '🎬',
+        trip: '✈️',
+        trips: '✈️',
+        food: '🍕',
+        event: '🎉',
+        events: '🎉',
+        project: '💻',
         project_collab: '💻',
+        other: '💡',
     };
 
     return (
@@ -145,37 +166,68 @@ const ActivityRowItem: React.FC<{
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     const { colors } = useCampusLoopTheme();
     const { state: authState } = useCampusLoopAuth();
+    const { unreadCount } = useNotifications();
 
     const [featuredActivities, setFeaturedActivities] = useState<CampusLoopActivity[]>([]);
-    const [recentActivities, setRecentActivities] = useState<CampusLoopActivity[]>([]);
-    const [refreshing, setRefreshing] = useState(false);
-    const [greeting, setGreeting] = useState('');
+    const [posts, setPosts]               = useState<CampusLoopPost[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<CampusLoopPostCategory | 'all'>('all');
+    const [refreshing, setRefreshing]     = useState(false);
+    const [greeting, setGreeting]         = useState('');
+
+    const postCategories: { key: CampusLoopPostCategory | 'all'; label: string; icon: string }[] = [
+        { key: 'all',        label: 'All',        icon: '🌐' },
+        { key: 'discussion', label: 'Discussion',  icon: '💬' },
+        { key: 'assignment', label: 'Assignment',  icon: '📝' },
+        { key: 'coding',     label: 'Coding',      icon: '💻' },
+        { key: 'activities', label: 'Activities',  icon: '🎯' },
+        { key: 'sports',     label: 'Sports',      icon: '⚽' },
+        { key: 'events',     label: 'Events',      icon: '🎉' },
+    ];
 
     useEffect(() => {
         const hour = new Date().getHours();
         if (hour < 12) setGreeting('Good morning');
         else if (hour < 18) setGreeting('Good afternoon');
         else setGreeting('Good evening');
-
-        loadActivities();
+        loadAll();
     }, []);
+
+    useEffect(() => {
+        loadPosts(selectedCategory);
+    }, [selectedCategory]);
+
+    const loadAll = async () => {
+        await Promise.all([loadActivities(), loadPosts(selectedCategory)]);
+        setRefreshing(false);
+    };
 
     const loadActivities = async () => {
         try {
             const data = await CampusLoopActivityService.getActivities(undefined, authState.user?.id);
             setFeaturedActivities(data.slice(0, 5));
-            setRecentActivities(data.slice(0, 10));
-        } catch (error) {
-            console.error('Error loading activities:', error);
-        } finally {
-            setRefreshing(false);
-        }
+        } catch {}
+    };
+
+    const loadPosts = async (category: CampusLoopPostCategory | 'all') => {
+        try {
+            const data = await CampusLoopPostService.getPosts(category === 'all' ? undefined : category);
+            setPosts(data);
+        } catch {}
     };
 
     const handleRefresh = () => {
         setRefreshing(true);
-        loadActivities();
+        loadAll();
     };
+
+    const handleLike = useCallback(async (postId: string) => {
+        try {
+            const result = await CampusLoopPostService.likePost(postId, authState.user?.id || '');
+            setPosts(prev => prev.map(p =>
+                p.id === postId ? { ...p, likesCount: result.likesCount, isLiked: result.isLiked } : p
+            ));
+        } catch {}
+    }, [authState.user?.id]);
 
     const userName = authState.user?.fullName?.split(' ')[0] || 'there';
 
@@ -211,9 +263,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                                 onPress={() => navigation.navigate('Notifications')}
                             >
                                 <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
-                                <View style={styles.notifBadge}>
-                                    <Text style={styles.notifBadgeText}>2</Text>
-                                </View>
+                                {unreadCount > 0 && (
+                                    <View style={styles.notifBadge}>
+                                        <Text style={styles.notifBadgeText}>
+                                            {unreadCount > 9 ? '9+' : unreadCount}
+                                        </Text>
+                                    </View>
+                                )}
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.headerBtn}
@@ -232,17 +288,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
                             <Text style={styles.statValue}>{featuredActivities.length}</Text>
-                            <Text style={styles.statLabel}>Active</Text>
+                            <Text style={styles.statLabel}>Happening</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>3</Text>
+                            <Text style={styles.statValue}>{authState.user?.activitiesJoined?.length ?? 0}</Text>
                             <Text style={styles.statLabel}>Joined</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>12</Text>
-                            <Text style={styles.statLabel}>Connections</Text>
+                            <Text style={styles.statValue}>{authState.user?.activitiesCreated?.length ?? 0}</Text>
+                            <Text style={styles.statLabel}>Created</Text>
                         </View>
                     </View>
                 </LinearGradient>
@@ -265,14 +321,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     />
                     <QuickActionButton
                         icon="🎬"
-                        label="Movie"
+                        label="Movies"
                         color="#EF4444"
                         bgColor={colors.surface}
                         onPress={() => navigation.navigate('CreateActivity')}
                     />
                     <QuickActionButton
                         icon="✈️"
-                        label="Trip"
+                        label="Trips"
                         color="#0EA5E9"
                         bgColor={colors.surface}
                         onPress={() => navigation.navigate('CreateActivity')}
@@ -307,32 +363,55 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     </View>
                 )}
 
-                {/* Recent Activities */}
+                {/* Campus Feed */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                            📋 Recent Activities
-                        </Text>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>🗞️ Campus Feed</Text>
                     </View>
-                    <View style={styles.activityList}>
-                        {recentActivities.length > 0 ? (
-                            recentActivities.map((activity, index) => (
-                                <ActivityRowItem
-                                    key={activity.id}
-                                    activity={activity}
-                                    onPress={() => navigation.navigate('ActivityDetail', { activityId: activity.id })}
-                                    colors={colors}
-                                    index={index}
+
+                    {/* Category chips */}
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.categoryChips}
+                    >
+                        {postCategories.map(cat => (
+                            <TouchableOpacity
+                                key={cat.key}
+                                style={[
+                                    styles.chip,
+                                    selectedCategory === cat.key
+                                        ? { backgroundColor: colors.primary }
+                                        : { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }
+                                ]}
+                                onPress={() => setSelectedCategory(cat.key)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.chipIcon}>{cat.icon}</Text>
+                                <Text style={[styles.chipLabel, { color: selectedCategory === cat.key ? '#FFFFFF' : colors.text }]}>
+                                    {cat.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
+                    {/* Posts */}
+                    <View style={styles.postsList}>
+                        {posts.length > 0 ? (
+                            posts.map(post => (
+                                <PostCard
+                                    key={post.id}
+                                    post={post}
+                                    onLike={handleLike}
+                                    onComment={() => {}}
                                 />
                             ))
                         ) : (
                             <View style={styles.emptyState}>
-                                <Text style={styles.emptyIcon}>🎯</Text>
-                                <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                                    No activities yet
-                                </Text>
+                                <Text style={styles.emptyIcon}>📭</Text>
+                                <Text style={[styles.emptyTitle, { color: colors.text }]}>No posts yet</Text>
                                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                                    Create an activity and start connecting!
+                                    Be the first to post something!
                                 </Text>
                             </View>
                         )}
@@ -561,6 +640,27 @@ const styles = StyleSheet.create({
     },
     activityRowMeta: {
         fontSize: CampusLoopTypography.fontSize.xs,
+    },
+    categoryChips: {
+        paddingHorizontal: CampusLoopSpacing.xl,
+        paddingBottom: CampusLoopSpacing.md,
+        gap: CampusLoopSpacing.sm,
+    },
+    chip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: CampusLoopSpacing.md,
+        paddingVertical: CampusLoopSpacing.sm,
+        borderRadius: CampusLoopBorderRadius.full,
+        gap: 4,
+    },
+    chipIcon: { fontSize: 14 },
+    chipLabel: {
+        fontSize: CampusLoopTypography.fontSize.sm,
+        fontWeight: CampusLoopTypography.fontWeight.medium,
+    },
+    postsList: {
+        paddingHorizontal: CampusLoopSpacing.base,
     },
     emptyState: {
         alignItems: 'center',

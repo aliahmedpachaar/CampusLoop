@@ -1,9 +1,9 @@
 /**
  * CampusLoop Welcome Screen
- * Beautiful onboarding with campus-focused illustrations
+ * Hero landing page
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import {
     View,
     Text,
@@ -12,6 +12,7 @@ import {
     StatusBar,
     TouchableOpacity,
     Image,
+    Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -22,17 +23,9 @@ import Animated, {
     withDelay,
     withSequence,
     withRepeat,
-    FadeInDown,
-    FadeInUp,
 } from 'react-native-reanimated';
-import Svg, { Circle, Path, G, Ellipse, Rect, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { useCampusLoopTheme } from '../../context/ThemeContext';
-import {
-    CampusLoopSpacing,
-    CampusLoopTypography,
-    CampusLoopBorderRadius,
-    CampusLoopShadows,
-} from '../../constants/theme';
+import { CampusLoopSpacing, CampusLoopTypography, CampusLoopBorderRadius } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
@@ -41,342 +34,329 @@ interface WelcomeScreenProps {
     navigation: any;
 }
 
-// Campus Illustration Component
-const CampusIllustration = () => {
-    const floatAnim = useSharedValue(0);
-
-    useEffect(() => {
-        floatAnim.value = withRepeat(
-            withSequence(
-                withTiming(8, { duration: 2000 }),
-                withTiming(0, { duration: 2000 })
-            ),
-            -1,
-            true
-        );
-    }, []);
-
-    const floatStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: floatAnim.value }],
-    }));
-
-    return (
-        <Animated.View style={[styles.illustrationContainer, floatStyle]}>
-            <Svg width={width * 0.85} height={280} viewBox="0 0 340 280">
-                <Defs>
-                    <RadialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
-                        <Stop offset="0%" stopColor="#FCD34D" />
-                        <Stop offset="100%" stopColor="#F59E0B" />
-                    </RadialGradient>
-                </Defs>
-
-                {/* Sky Elements */}
-                <Circle cx="290" cy="50" r="30" fill="url(#sunGrad)" />
-
-                {/* Clouds */}
-                <G opacity="0.8">
-                    <Ellipse cx="60" cy="40" rx="25" ry="12" fill="#FFFFFF" />
-                    <Ellipse cx="80" cy="35" rx="20" ry="10" fill="#FFFFFF" />
-                    <Ellipse cx="45" cy="38" rx="15" ry="8" fill="#FFFFFF" />
-                </G>
-                <G opacity="0.6">
-                    <Ellipse cx="220" cy="70" rx="20" ry="10" fill="#FFFFFF" />
-                    <Ellipse cx="235" cy="65" rx="15" ry="8" fill="#FFFFFF" />
-                </G>
-
-                {/* Ground */}
-                <Path d="M0 230 Q170 200 340 230 L340 280 L0 280 Z" fill="#10B981" opacity="0.3" />
-                <Path d="M0 250 Q170 220 340 250 L340 280 L0 280 Z" fill="#10B981" opacity="0.5" />
-
-                {/* University Building */}
-                <G transform="translate(100, 90)">
-                    {/* Main Building */}
-                    <Rect x="0" y="50" width="140" height="100" fill="#F8FAFC" rx="4" />
-                    <Rect x="10" y="50" width="120" height="8" fill="#0D9488" />
-
-                    {/* Roof */}
-                    <Path d="M-10 50 L70 10 L150 50 Z" fill="#1E293B" />
-                    <Circle cx="70" cy="30" r="12" fill="#F59E0B" />
-
-                    {/* Windows */}
-                    <Rect x="20" y="70" width="25" height="30" fill="#0EA5E9" opacity="0.6" rx="2" />
-                    <Rect x="58" y="70" width="25" height="30" fill="#0EA5E9" opacity="0.6" rx="2" />
-                    <Rect x="96" y="70" width="25" height="30" fill="#0EA5E9" opacity="0.6" rx="2" />
-
-                    {/* Door */}
-                    <Rect x="55" y="115" width="30" height="35" fill="#1E293B" rx="2" />
-                    <Circle cx="80" cy="132" r="2" fill="#F59E0B" />
-
-                    {/* Pillars */}
-                    <Rect x="25" y="105" width="8" height="45" fill="#E2E8F0" />
-                    <Rect x="107" y="105" width="8" height="45" fill="#E2E8F0" />
-                </G>
-
-                {/* Students */}
-                {/* Student 1 */}
-                <G transform="translate(50, 200)">
-                    <Circle cx="15" cy="10" r="12" fill="#FEF3C7" />
-                    <Rect x="8" y="22" width="14" height="25" fill="#0D9488" rx="4" />
-                    <Rect x="5" y="47" width="8" height="15" fill="#1E293B" rx="2" />
-                    <Rect x="17" y="47" width="8" height="15" fill="#1E293B" rx="2" />
-                    <Circle cx="12" cy="8" r="3" fill="#1E293B" />
-                    <Circle cx="18" cy="8" r="3" fill="#1E293B" />
-                    <Rect x="0" y="0" width="12" height="20" fill="#1E293B" rx="6" transform="rotate(-30, 6, 10)" />
-                </G>
-
-                {/* Student 2 */}
-                <G transform="translate(270, 195)">
-                    <Circle cx="15" cy="10" r="12" fill="#FECACA" />
-                    <Rect x="8" y="22" width="14" height="25" fill="#F97316" rx="4" />
-                    <Rect x="5" y="47" width="8" height="15" fill="#1E293B" rx="2" />
-                    <Rect x="17" y="47" width="8" height="15" fill="#1E293B" rx="2" />
-                    <Circle cx="12" cy="8" r="3" fill="#1E293B" />
-                    <Circle cx="18" cy="8" r="3" fill="#1E293B" />
-                </G>
-
-                {/* Student 3 walking */}
-                <G transform="translate(160, 210)">
-                    <Circle cx="12" cy="8" r="10" fill="#E0E7FF" />
-                    <Rect x="6" y="18" width="12" height="20" fill="#8B5CF6" rx="3" />
-                    <Rect x="4" y="38" width="6" height="12" fill="#1E293B" rx="2" />
-                    <Rect x="14" y="38" width="6" height="12" fill="#1E293B" rx="2" />
-                </G>
-
-                {/* Trees */}
-                <G transform="translate(20, 160)">
-                    <Rect x="12" y="40" width="8" height="30" fill="#92400E" />
-                    <Circle cx="16" cy="30" r="22" fill="#10B981" />
-                    <Circle cx="8" cy="38" r="15" fill="#059669" />
-                    <Circle cx="24" cy="38" r="15" fill="#059669" />
-                </G>
-
-                <G transform="translate(295, 170)">
-                    <Rect x="10" y="35" width="6" height="25" fill="#92400E" />
-                    <Circle cx="13" cy="25" r="18" fill="#10B981" />
-                    <Circle cx="6" cy="32" r="12" fill="#059669" />
-                    <Circle cx="20" cy="32" r="12" fill="#059669" />
-                </G>
-
-                {/* Floating Elements - Books & Graduation Cap */}
-                <G transform="translate(35, 100)" opacity="0.9">
-                    <Rect x="0" y="0" width="20" height="25" fill="#0D9488" rx="2" />
-                    <Rect x="2" y="2" width="16" height="2" fill="#FFFFFF" opacity="0.5" />
-                </G>
-
-                <G transform="translate(280, 120)" opacity="0.9">
-                    <Path d="M0 10 L15 0 L30 10 L15 20 Z" fill="#1E293B" />
-                    <Rect x="13" y="8" width="4" height="12" fill="#1E293B" />
-                    <Circle cx="15" cy="22" r="3" fill="#F59E0B" />
-                </G>
-            </Svg>
-        </Animated.View>
-    );
-};
+const features = [
+    { icon: '📚', label: 'Study Together' },
+    { icon: '⚽', label: 'Sports & Fun' },
+    { icon: '🍕', label: 'Food & Hangouts' },
+    { icon: '💬', label: 'Group Chats' },
+];
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
     const { colors } = useCampusLoopTheme();
 
+    // Animated values — these use useSharedValue so they work on web
+    const logoScale   = useSharedValue(0.7);
+    const logoOpacity = useSharedValue(0);
+    const textOpacity = useSharedValue(0);
+    const textY       = useSharedValue(30);
+    const featureOpacity = useSharedValue(0);
+    const btnOpacity  = useSharedValue(0);
+    const btnY        = useSharedValue(20);
+    const pulse       = useSharedValue(1);
+
+    useEffect(() => {
+        // Logo pop-in
+        logoScale.value   = withSpring(1, { damping: 12, stiffness: 120 });
+        logoOpacity.value = withTiming(1, { duration: 500 });
+        // Text slide-up
+        textOpacity.value = withDelay(300, withTiming(1, { duration: 500 }));
+        textY.value       = withDelay(300, withSpring(0, { damping: 14 }));
+        // Features fade
+        featureOpacity.value = withDelay(600, withTiming(1, { duration: 500 }));
+        // Buttons slide-up
+        btnOpacity.value  = withDelay(800, withTiming(1, { duration: 400 }));
+        btnY.value        = withDelay(800, withSpring(0, { damping: 14 }));
+        // Subtle pulse on logo ring
+        pulse.value = withDelay(1200, withRepeat(
+            withSequence(
+                withTiming(1.08, { duration: 1800 }),
+                withTiming(1,    { duration: 1800 })
+            ), -1, true
+        ));
+    }, []);
+
+    const logoStyle    = useAnimatedStyle(() => ({ opacity: logoOpacity.value, transform: [{ scale: logoScale.value }] }));
+    const textStyle    = useAnimatedStyle(() => ({ opacity: textOpacity.value, transform: [{ translateY: textY.value }] }));
+    const featureStyle = useAnimatedStyle(() => ({ opacity: featureOpacity.value }));
+    const btnStyle     = useAnimatedStyle(() => ({ opacity: btnOpacity.value, transform: [{ translateY: btnY.value }] }));
+    const pulseStyle   = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
+
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <StatusBar barStyle="dark-content" />
+        <View style={styles.container}>
+            <StatusBar barStyle="light-content" />
 
-            {/* Background Decoration */}
-            <View style={styles.bgDecoration}>
-                <View style={[styles.bgCircle, styles.bgCircle1, { backgroundColor: colors.primary + '10' }]} />
-                <View style={[styles.bgCircle, styles.bgCircle2, { backgroundColor: colors.accent + '08' }]} />
+            {/* Full-bleed gradient background */}
+            <LinearGradient
+                colors={['#0D9488', '#0EA5E9', '#2563EB']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0.6, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+            />
+
+            {/* Decorative blobs */}
+            <View style={[styles.blob, styles.blobTop]} />
+            <View style={[styles.blob, styles.blobBottom]} />
+
+            {/* ── Top section: logo + branding ── */}
+            <View style={styles.topSection}>
+                <Animated.View style={[styles.logoRingWrap, pulseStyle]}>
+                    <View style={styles.logoRing}>
+                        <Animated.View style={[styles.logoWrap, logoStyle]}>
+                            <Image
+                                source={require('../../assets/images/logo.png')}
+                                style={styles.logo}
+                                resizeMode="contain"
+                            />
+                        </Animated.View>
+                    </View>
+                </Animated.View>
+
+                <Animated.View style={[styles.brandWrap, textStyle]}>
+                    <Text style={styles.appName}>CampusLoop</Text>
+                    <Text style={styles.tagline}>
+                        Where campus life{'\n'}comes together
+                    </Text>
+                </Animated.View>
             </View>
 
-            {/* Illustration */}
-            <CampusIllustration />
+            {/* ── Feature chips ── */}
+            <Animated.View style={[styles.featuresRow, featureStyle]}>
+                {features.map(f => (
+                    <View key={f.label} style={styles.chip}>
+                        <Text style={styles.chipEmoji}>{f.icon}</Text>
+                        <Text style={styles.chipLabel}>{f.label}</Text>
+                    </View>
+                ))}
+            </Animated.View>
 
-            {/* Content */}
-            <View style={styles.content}>
-                <Animated.View entering={FadeInUp.delay(300).duration(600)} style={styles.titleSection}>
-                    <Image
-                        source={require('../../assets/images/logo.png')}
-                        style={styles.logo}
-                        resizeMode="contain"
-                    />
-                    <Text style={[styles.title, { color: colors.text }]}>
-                        CampusLoop
-                    </Text>
-                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                        Connect with your campus community.{'\n'}
-                        Create activities, find study groups,{'\n'}
-                        and make university life awesome!
-                    </Text>
-                </Animated.View>
+            {/* ── Stats strip ── */}
+            <Animated.View style={[styles.statsStrip, featureStyle]}>
+                <View style={styles.statItem}>
+                    <Text style={styles.statNum}>500+</Text>
+                    <Text style={styles.statLbl}>Students</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                    <Text style={styles.statNum}>1,200+</Text>
+                    <Text style={styles.statLbl}>Activities</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                    <Text style={styles.statNum}>50+</Text>
+                    <Text style={styles.statLbl}>Groups</Text>
+                </View>
+            </Animated.View>
 
-                {/* Features */}
-                <Animated.View
-                    entering={FadeInUp.delay(500).duration(600)}
-                    style={styles.features}
+            {/* ── Bottom card with buttons ── */}
+            <Animated.View style={[styles.bottomCard, btnStyle]}>
+                <TouchableOpacity
+                    style={styles.primaryBtn}
+                    onPress={() => navigation.navigate('Signup')}
+                    activeOpacity={0.9}
                 >
-                    <View style={styles.featureRow}>
-                        <View style={[styles.featureIcon, { backgroundColor: colors.primary + '15' }]}>
-                            <Ionicons name="people" size={20} color={colors.primary} />
-                        </View>
-                        <Text style={[styles.featureText, { color: colors.textSecondary }]}>
-                            Find study partners & groups
-                        </Text>
-                    </View>
-                    <View style={styles.featureRow}>
-                        <View style={[styles.featureIcon, { backgroundColor: colors.secondary + '15' }]}>
-                            <Ionicons name="calendar" size={20} color={colors.secondary} />
-                        </View>
-                        <Text style={[styles.featureText, { color: colors.textSecondary }]}>
-                            Create & join campus activities
-                        </Text>
-                    </View>
-                    <View style={styles.featureRow}>
-                        <View style={[styles.featureIcon, { backgroundColor: colors.accent + '15' }]}>
-                            <Ionicons name="chatbubbles" size={20} color={colors.accent} />
-                        </View>
-                        <Text style={[styles.featureText, { color: colors.textSecondary }]}>
-                            Chat & plan together
-                        </Text>
-                    </View>
-                </Animated.View>
+                    <Text style={styles.primaryBtnText}>Get Started</Text>
+                    <Ionicons name="arrow-forward" size={20} color="#0D9488" />
+                </TouchableOpacity>
 
-                {/* Buttons */}
-                <Animated.View
-                    entering={FadeInUp.delay(700).duration(600)}
-                    style={styles.buttonContainer}
+                <TouchableOpacity
+                    style={styles.secondaryBtn}
+                    onPress={() => navigation.navigate('Login')}
+                    activeOpacity={0.8}
                 >
-                    <TouchableOpacity
-                        style={styles.primaryButton}
-                        onPress={() => navigation.navigate('Signup')}
-                        activeOpacity={0.9}
-                    >
-                        <LinearGradient
-                            colors={[colors.gradientStart, colors.gradientEnd]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.gradientButton}
-                        >
-                            <Text style={styles.primaryButtonText}>Get Started</Text>
-                            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-                        </LinearGradient>
-                    </TouchableOpacity>
+                    <Text style={styles.secondaryBtnText}>I already have an account</Text>
+                </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.secondaryButton, { borderColor: colors.border }]}
-                        onPress={() => navigation.navigate('Login')}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={[styles.secondaryButtonText, { color: colors.text }]}>
-                            I already have an account
-                        </Text>
-                    </TouchableOpacity>
-                </Animated.View>
-            </View>
+                <Text style={styles.legalText}>
+                    By continuing you agree to our Terms & Privacy Policy
+                </Text>
+            </Animated.View>
         </View>
     );
 };
 
+const CARD_RADIUS = 32;
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#0D9488',
     },
-    bgDecoration: {
-        ...StyleSheet.absoluteFillObject,
-        overflow: 'hidden',
-    },
-    bgCircle: {
+
+    // Decorative blobs
+    blob: {
         position: 'absolute',
         borderRadius: 999,
+        backgroundColor: 'rgba(255,255,255,0.06)',
     },
-    bgCircle1: {
-        width: width * 0.8,
-        height: width * 0.8,
-        top: -width * 0.3,
-        right: -width * 0.2,
+    blobTop: {
+        width: width * 0.9,
+        height: width * 0.9,
+        top: -width * 0.35,
+        right: -width * 0.25,
     },
-    bgCircle2: {
-        width: width * 0.6,
-        height: width * 0.6,
-        bottom: -width * 0.1,
-        left: -width * 0.2,
+    blobBottom: {
+        width: width * 0.7,
+        height: width * 0.7,
+        bottom: height * 0.25,
+        left: -width * 0.3,
     },
-    illustrationContainer: {
-        alignItems: 'center',
-        marginTop: height * 0.08,
-    },
-    content: {
+
+    // Top section
+    topSection: {
         flex: 1,
-        paddingHorizontal: CampusLoopSpacing.xl,
-        paddingBottom: CampusLoopSpacing['3xl'],
-        justifyContent: 'flex-end',
-    },
-    titleSection: {
         alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: Platform.OS === 'web' ? 60 : 80,
+        paddingHorizontal: CampusLoopSpacing.xl,
+    },
+    logoRingWrap: {
+        marginBottom: CampusLoopSpacing.xl,
+    },
+    logoRing: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.3)',
+    },
+    logoWrap: {
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
     },
     logo: {
-        width: 100,
-        height: 100,
+        width: 72,
+        height: 72,
     },
-    title: {
-        fontSize: CampusLoopTypography.fontSize['4xl'],
-        fontWeight: CampusLoopTypography.fontWeight.bold,
-        textAlign: 'center',
-        marginTop: CampusLoopSpacing.md,
-        marginBottom: CampusLoopSpacing.md,
+    brandWrap: {
+        alignItems: 'center',
     },
-    subtitle: {
-        fontSize: CampusLoopTypography.fontSize.base,
+    appName: {
+        fontSize: 38,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        letterSpacing: -0.5,
+        marginBottom: CampusLoopSpacing.sm,
+    },
+    tagline: {
+        fontSize: CampusLoopTypography.fontSize.lg,
+        color: 'rgba(255,255,255,0.85)',
         textAlign: 'center',
-        lineHeight: 24,
+        lineHeight: 28,
+        fontWeight: '400',
+    },
+
+    // Feature chips
+    featuresRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: CampusLoopSpacing.sm,
+        paddingHorizontal: CampusLoopSpacing.xl,
         marginBottom: CampusLoopSpacing.xl,
     },
-    features: {
-        marginBottom: CampusLoopSpacing.xl,
-    },
-    featureRow: {
+    chip: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: CampusLoopSpacing.md,
+        gap: 6,
+        backgroundColor: 'rgba(255,255,255,0.18)',
+        paddingHorizontal: CampusLoopSpacing.md,
+        paddingVertical: CampusLoopSpacing.xs + 2,
+        borderRadius: CampusLoopBorderRadius.full,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.25)',
     },
-    featureIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
+    chipEmoji: {
+        fontSize: 15,
+    },
+    chipLabel: {
+        fontSize: CampusLoopTypography.fontSize.sm,
+        color: '#FFFFFF',
+        fontWeight: '600',
+    },
+
+    // Stats strip
+    statsStrip: {
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: CampusLoopSpacing.md,
+        marginHorizontal: CampusLoopSpacing.xl,
+        marginBottom: CampusLoopSpacing.xl,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderRadius: CampusLoopBorderRadius.xl,
+        paddingVertical: CampusLoopSpacing.md,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
     },
-    featureText: {
-        fontSize: CampusLoopTypography.fontSize.sm,
-        fontWeight: CampusLoopTypography.fontWeight.medium,
+    statItem: {
+        flex: 1,
+        alignItems: 'center',
     },
-    buttonContainer: {
+    statNum: {
+        fontSize: CampusLoopTypography.fontSize.xl,
+        fontWeight: '800',
+        color: '#FFFFFF',
+    },
+    statLbl: {
+        fontSize: CampusLoopTypography.fontSize.xs,
+        color: 'rgba(255,255,255,0.75)',
+        marginTop: 2,
+    },
+    statDivider: {
+        width: 1,
+        height: 32,
+        backgroundColor: 'rgba(255,255,255,0.25)',
+    },
+
+    // Bottom card
+    bottomCard: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: CARD_RADIUS,
+        borderTopRightRadius: CARD_RADIUS,
+        paddingHorizontal: CampusLoopSpacing.xl,
+        paddingTop: CampusLoopSpacing.xl,
+        paddingBottom: Platform.OS === 'web' ? CampusLoopSpacing.xl : 40,
         gap: CampusLoopSpacing.md,
     },
-    primaryButton: {
-        borderRadius: CampusLoopBorderRadius.lg,
-        overflow: 'hidden',
-        ...CampusLoopShadows.md,
-    },
-    gradientButton: {
+    primaryBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: CampusLoopSpacing.base + 2,
         gap: CampusLoopSpacing.sm,
-    },
-    primaryButtonText: {
-        color: '#FFFFFF',
-        fontSize: CampusLoopTypography.fontSize.lg,
-        fontWeight: CampusLoopTypography.fontWeight.semibold,
-    },
-    secondaryButton: {
-        paddingVertical: CampusLoopSpacing.base,
+        backgroundColor: '#F0FFFE',
+        borderWidth: 2,
+        borderColor: '#0D9488',
+        paddingVertical: CampusLoopSpacing.base + 2,
         borderRadius: CampusLoopBorderRadius.lg,
-        borderWidth: 1.5,
+    },
+    primaryBtnText: {
+        fontSize: CampusLoopTypography.fontSize.lg,
+        fontWeight: '700',
+        color: '#0D9488',
+    },
+    secondaryBtn: {
+        backgroundColor: '#0D9488',
+        paddingVertical: CampusLoopSpacing.base + 2,
+        borderRadius: CampusLoopBorderRadius.lg,
         alignItems: 'center',
     },
-    secondaryButtonText: {
+    secondaryBtnText: {
         fontSize: CampusLoopTypography.fontSize.base,
-        fontWeight: CampusLoopTypography.fontWeight.medium,
+        fontWeight: '600',
+        color: '#FFFFFF',
+    },
+    legalText: {
+        fontSize: 11,
+        color: '#94A3B8',
+        textAlign: 'center',
+        lineHeight: 16,
     },
 });
 

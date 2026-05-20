@@ -120,7 +120,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     </TouchableOpacity>
 
                     {/* Profile Info */}
-                    <Animated.View entering={FadeIn.duration(500)} style={styles.profileInfo}>
+                    <View style={styles.profileInfo}>
                         <View style={[styles.avatarWrapper, { borderColor: 'rgba(255,255,255,0.3)' }]}>
                             <CampusLoopAvatar
                                 name={user.fullName}
@@ -136,7 +136,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                             <Ionicons name="school-outline" size={14} color="rgba(255,255,255,0.9)" />
                             <Text style={styles.campusText}>{user.university}</Text>
                         </View>
-                    </Animated.View>
+                    </View>
 
                     {/* Stats */}
                     <View style={styles.statsRow}>
@@ -171,10 +171,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 </View>
 
                 {/* Academic Info Card */}
-                <Animated.View
-                    entering={FadeInDown.delay(100).duration(400)}
-                    style={styles.section}
-                >
+                <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>
                         🎓 Academic Info
                     </Text>
@@ -199,13 +196,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                             </View>
                         </View>
                     </View>
-                </Animated.View>
+                </View>
 
                 {/* Interests */}
-                <Animated.View
-                    entering={FadeInDown.delay(200).duration(400)}
-                    style={styles.section}
-                >
+                <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>
                         💡 Interests
                     </Text>
@@ -221,13 +215,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                             </View>
                         ))}
                     </View>
-                </Animated.View>
+                </View>
 
                 {/* Menu Items */}
-                <Animated.View
-                    entering={FadeInDown.delay(300).duration(400)}
-                    style={styles.section}
-                >
+                <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>
                         ⚙️ Settings
                     </Text>
@@ -265,7 +256,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                             colors={colors}
                         />
                     </View>
-                </Animated.View>
+                </View>
 
                 {/* Logout */}
                 <TouchableOpacity

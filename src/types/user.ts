@@ -20,6 +20,8 @@ export interface CampusLoopUser {
     createdAt: Date;
     locationEnabled: boolean;
     locationRadius?: 'building' | 'campus' | 'nearby';
+    activitiesJoined?: string[];
+    activitiesCreated?: string[];
 }
 
 export interface CampusLoopUserProfile {

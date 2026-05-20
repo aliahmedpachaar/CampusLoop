@@ -23,10 +23,14 @@ import { ProfileSetupScreen }   from '../screens/auth/ProfileSetupScreen';
 // Main Screens
 import { HomeScreen }           from '../screens/home/HomeScreen';
 import { ActivitiesScreen }     from '../screens/activities/ActivitiesScreen';
-import { CreateActivityScreen } from '../screens/activities/CreateActivityScreen';
+import { CreateActivityScreen }  from '../screens/activities/CreateActivityScreen';
+import { ActivityChatScreen }    from '../screens/activities/ActivityChatScreen';
+import { ActivityDetailScreen }  from '../screens/activities/ActivityDetailScreen';
+import { CreatePostScreen }     from '../screens/post/CreatePostScreen';
 import { ProfileScreen }        from '../screens/profile/ProfileScreen';
 import NotificationsScreen      from '../screens/notifications/NotificationsScreen';
 import { EditProfileScreen }    from '../screens/profile/EditProfileScreen';
+import { SearchScreen }         from '../screens/search/SearchScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -60,6 +64,8 @@ const MainTabs = () => {
                 options={{ tabBarLabel: 'Home', tabBarIcon: ({ focused, color }) => <TabIcon focused={focused} icon={focused ? 'home' : 'home-outline'} color={color} /> }} />
             <Tab.Screen name="Activities" component={ActivitiesScreen}
                 options={{ tabBarLabel: 'Activities', tabBarIcon: ({ focused, color }) => <TabIcon focused={focused} icon={focused ? 'people' : 'people-outline'} color={color} /> }} />
+            <Tab.Screen name="Search" component={SearchScreen}
+                options={{ tabBarLabel: 'Search', tabBarIcon: ({ focused, color }) => <TabIcon focused={focused} icon={focused ? 'search' : 'search-outline'} color={color} /> }} />
             <Tab.Screen name="Profile" component={ProfileScreen}
                 options={{ tabBarLabel: 'Profile', tabBarIcon: ({ focused, color }) => <TabIcon focused={focused} icon={focused ? 'person' : 'person-outline'} color={color} /> }} />
         </Tab.Navigator>
@@ -70,6 +76,12 @@ const AuthenticatedStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen name="CreateActivity" component={CreateActivityScreen}
+            options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="ActivityDetail"  component={ActivityDetailScreen}
+            options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="ActivityChat"   component={ActivityChatScreen}
+            options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="CreatePost"     component={CreatePostScreen}
             options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="Notifications"  component={NotificationsScreen} />
         <Stack.Screen name="EditProfile"    component={EditProfileScreen} />

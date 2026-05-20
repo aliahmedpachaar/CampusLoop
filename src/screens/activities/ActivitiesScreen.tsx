@@ -67,24 +67,33 @@ interface ActivityCardProps {
     activity: CampusLoopActivity;
     onPress: () => void;
     onJoin: () => void;
+    onChat: () => void;
     colors: any;
     index: number;
 }
 
-const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress, onJoin, colors, index }) => {
+const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress, onJoin, onChat, colors, index }) => {
     const scale = useSharedValue(1);
-    const isJoined = activity.isJoined;
+    const isJoined = activity.isJoined || activity.isCreator;
 
     const getCategoryInfo = (type: string) => {
         const typeToCategory: Record<string, ActivityCategoryKey> = {
             study_group: 'study',
             assignment_help: 'help',
             sports: 'sports',
+            movies: 'movies',
+            movie: 'movies',
+            trip: 'trips',
+            trips: 'trips',
+            food: 'food',
             event: 'events',
+            events: 'events',
+            project: 'study',
             project_collab: 'study',
+            other: 'events',
         };
         const categoryKey = typeToCategory[type] || 'events';
-        return categories.find(c => c.key === categoryKey) || categories[0];
+        return categories.find(c => c.key === categoryKey) || categories[1];
     };
 
     const categoryInfo = getCategoryInfo(activity.type);
@@ -202,30 +211,41 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onPress, onJoin, 
                         </Text>
                     </View>
 
-                    <TouchableOpacity
-                        style={[
-                            styles.joinButton,
-                            isJoined
-                                ? { backgroundColor: colors.success + '15', borderColor: colors.success }
-                                : { backgroundColor: colors.primary, borderColor: colors.primary }
-                        ]}
-                        onPress={onJoin}
-                        disabled={isJoined || spotsLeft === 0}
-                    >
-                        {isJoined ? (
-                            <>
-                                <Ionicons name="checkmark" size={16} color={colors.success} />
-                                <Text style={[styles.joinButtonText, { color: colors.success }]}>Joined</Text>
-                            </>
-                        ) : spotsLeft === 0 ? (
-                            <Text style={[styles.joinButtonText, { color: colors.textTertiary }]}>Full</Text>
-                        ) : (
-                            <>
-                                <Ionicons name="add" size={16} color="#FFFFFF" />
-                                <Text style={[styles.joinButtonText, { color: '#FFFFFF' }]}>Join</Text>
-                            </>
+                    <View style={styles.cardActions}>
+                        {(activity.isJoined || activity.isCreator) && (
+                            <TouchableOpacity
+                                style={[styles.chatButton, { backgroundColor: colors.accent + '20', borderColor: colors.accent }]}
+                                onPress={onChat}
+                            >
+                                <Ionicons name="chatbubble-outline" size={15} color={colors.accent} />
+                                <Text style={[styles.joinButtonText, { color: colors.accent }]}>Chat</Text>
+                            </TouchableOpacity>
                         )}
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[
+                                styles.joinButton,
+                                isJoined
+                                    ? { backgroundColor: colors.success + '15', borderColor: colors.success }
+                                    : { backgroundColor: colors.primary, borderColor: colors.primary }
+                            ]}
+                            onPress={onJoin}
+                            disabled={isJoined || spotsLeft === 0}
+                        >
+                            {isJoined ? (
+                                <>
+                                    <Ionicons name="checkmark" size={16} color={colors.success} />
+                                    <Text style={[styles.joinButtonText, { color: colors.success }]}>Joined</Text>
+                                </>
+                            ) : spotsLeft === 0 ? (
+                                <Text style={[styles.joinButtonText, { color: colors.textTertiary }]}>Full</Text>
+                            ) : (
+                                <>
+                                    <Ionicons name="add" size={16} color="#FFFFFF" />
+                                    <Text style={[styles.joinButtonText, { color: '#FFFFFF' }]}>Join</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </TouchableOpacity>
         </Animated.View>
@@ -289,11 +309,15 @@ export const ActivitiesScreen: React.FC<ActivitiesScreenProps> = ({ navigation }
                 study_group: 'study',
                 assignment_help: 'help',
                 sports: 'sports',
-                movies: 'events',
-                trip: 'events',
-                food: 'events',
+                movies: 'movies',
+                movie: 'movies',
+                trip: 'trips',
+                trips: 'trips',
+                food: 'food',
                 event: 'events',
+                events: 'events',
                 project: 'study',
+                project_collab: 'study',
                 other: 'events',
             };
             return typeToCategory[a.type] === selectedCategory;
@@ -304,6 +328,7 @@ export const ActivitiesScreen: React.FC<ActivitiesScreenProps> = ({ navigation }
             activity={item}
             onPress={() => navigation.navigate('ActivityDetail', { activityId: item.id })}
             onJoin={() => handleJoinActivity(item.id)}
+            onChat={() => navigation.navigate('ActivityChat', { activityId: item.id, activityTitle: item.title, activityType: item.type })}
             colors={colors}
             index={index}
         />
@@ -385,12 +410,12 @@ export const ActivitiesScreen: React.FC<ActivitiesScreenProps> = ({ navigation }
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.quickAction, { backgroundColor: colors.surface }]}
-                    onPress={() => navigation.navigate('CreateActivity', { type: 'event' })}
+                    onPress={() => navigation.navigate('CreateActivity', { type: 'movies' })}
                 >
                     <View style={[styles.quickActionIcon, { backgroundColor: '#EF4444' + '15' }]}>
                         <Text style={{ fontSize: 20 }}>🎬</Text>
                     </View>
-                    <Text style={[styles.quickActionText, { color: colors.text }]}>Movie</Text>
+                    <Text style={[styles.quickActionText, { color: colors.text }]}>Movies</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.quickAction, { backgroundColor: colors.surface }]}
@@ -403,19 +428,19 @@ export const ActivitiesScreen: React.FC<ActivitiesScreenProps> = ({ navigation }
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.quickAction, { backgroundColor: colors.surface }]}
-                    onPress={() => navigation.navigate('CreateActivity', { type: 'event' })}
+                    onPress={() => navigation.navigate('CreateActivity', { type: 'trip' })}
                 >
                     <View style={[styles.quickActionIcon, { backgroundColor: '#0EA5E9' + '15' }]}>
                         <Text style={{ fontSize: 20 }}>✈️</Text>
                     </View>
-                    <Text style={[styles.quickActionText, { color: colors.text }]}>Trip</Text>
+                    <Text style={[styles.quickActionText, { color: colors.text }]}>Trips</Text>
                 </TouchableOpacity>
             </View>
 
             {/* Activities List */}
             <FlatList
                 data={filteredActivities}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item, index) => item.id || String(index)}
                 renderItem={renderActivityCard}
                 contentContainerStyle={styles.activitiesList}
                 showsVerticalScrollIndicator={false}
@@ -655,6 +680,20 @@ const styles = StyleSheet.create({
     },
     participantsText: {
         fontSize: CampusLoopTypography.fontSize.xs,
+    },
+    cardActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: CampusLoopSpacing.sm,
+    },
+    chatButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: CampusLoopSpacing.md,
+        paddingVertical: CampusLoopSpacing.sm,
+        borderRadius: CampusLoopBorderRadius.full,
+        borderWidth: 1,
+        gap: 4,
     },
     joinButton: {
         flexDirection: 'row',

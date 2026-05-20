@@ -58,7 +58,30 @@ yarn-error.log
 # testing
 /coverage
 
-# Environment variables
+# Environment variables — never commit secrets
 .env
 .env.*
 !.env.example
+backend/.env
+backend/.env.*
+
+# Private keys & certificates
+*.pem
+*.p8
+*.p12
+*.mobileprovision
+
+# Firebase / Google config (contain API keys)
+GoogleService-Info.plist
+google-services.json
+
+# Uploaded user media (if stored locally)
+backend/uploads/
+
+# Editor directories
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/

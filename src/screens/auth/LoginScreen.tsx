@@ -12,8 +12,8 @@ import {
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useCampusLoopAuth } from '../../context/AuthContext';
 
@@ -23,6 +23,7 @@ interface Props { navigation: any }
 
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     const { login, googleAuth } = useCampusLoopAuth();
+    const insets = useSafeAreaInsets();
 
     const [email,      setEmail]      = useState('');
     const [password,   setPassword]   = useState('');
@@ -136,12 +137,12 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.root}>
             <StatusBar barStyle="light-content" />
 
-            <LinearGradient colors={['#059669', '#10B981']} style={styles.header}>
-                <Animated.View entering={FadeInDown.duration(600)} style={styles.logoRow}>
+            <LinearGradient colors={['#059669', '#10B981']} style={[styles.header, { paddingTop: insets.top + 16 }]}>
+                <View style={styles.logoRow}>
                     <Image source={require('../../assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
                     <Text style={styles.appName}>CampusLoop</Text>
                     <Text style={styles.tagline}>City University Community</Text>
-                </Animated.View>
+                </View>
             </LinearGradient>
 
             <KeyboardAvoidingView
@@ -153,7 +154,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    <Animated.View entering={FadeInUp.delay(200).duration(600)} style={styles.card}>
+                    <View style={styles.card}>
                         <Text style={styles.cardTitle}>Welcome Back</Text>
                         <Text style={styles.cardSubtitle}>Sign in to your account</Text>
 
@@ -262,7 +263,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
                             <Text style={styles.signupText}>Don't have an account? </Text>
                             <Text style={styles.signupLink}>Create Account</Text>
                         </TouchableOpacity>
-                    </Animated.View>
+                    </View>
                 </ScrollView>
             </KeyboardAvoidingView>
         </View>
@@ -271,13 +272,13 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     root:          { flex: 1, backgroundColor: '#f9fafb' },
-    header:        { paddingTop: Platform.OS === 'ios' ? 60 : 48, paddingBottom: 40, alignItems: 'center' },
+    header:        { paddingTop: 16, paddingBottom: 24, alignItems: 'center' },
     logoRow:       { alignItems: 'center', gap: 8 },
     logo:          { width: 72, height: 72, borderRadius: 18, backgroundColor: '#fff' },
     appName:       { fontSize: 26, fontWeight: '800', color: '#fff' },
     tagline:       { fontSize: 14, color: 'rgba(255,255,255,0.85)' },
-    scroll:        { paddingHorizontal: 20, paddingBottom: 40 },
-    card:          { backgroundColor: '#fff', borderRadius: 24, padding: 24, marginTop: -20,
+    scroll:        { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 },
+    card:          { backgroundColor: '#fff', borderRadius: 24, padding: 24,
                      shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 8 },
     cardTitle:     { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 4 },
     cardSubtitle:  { fontSize: 14, color: '#6b7280', marginBottom: 24 },
